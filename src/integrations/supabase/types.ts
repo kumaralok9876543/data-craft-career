@@ -14,7 +14,267 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      job_skills: {
+        Row: {
+          id: string
+          job_id: string
+          skill_id: string
+        }
+        Insert: {
+          id?: string
+          job_id: string
+          skill_id: string
+        }
+        Update: {
+          id?: string
+          job_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_skills_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          apply_link: string | null
+          company_id: string | null
+          company_name: string
+          created_at: string
+          description: string | null
+          experience_required: string | null
+          id: string
+          location: string
+          posted_date: string | null
+          salary: string | null
+          source: string
+          source_url: string | null
+          title: string
+        }
+        Insert: {
+          apply_link?: string | null
+          company_id?: string | null
+          company_name: string
+          created_at?: string
+          description?: string | null
+          experience_required?: string | null
+          id?: string
+          location?: string
+          posted_date?: string | null
+          salary?: string | null
+          source?: string
+          source_url?: string | null
+          title: string
+        }
+        Update: {
+          apply_link?: string | null
+          company_id?: string | null
+          company_name?: string
+          created_at?: string
+          description?: string | null
+          experience_required?: string | null
+          id?: string
+          location?: string
+          posted_date?: string | null
+          salary?: string | null
+          source?: string
+          source_url?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          experience_years: number | null
+          full_name: string | null
+          id: string
+          location: string | null
+          target_role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          experience_years?: number | null
+          full_name?: string | null
+          id?: string
+          location?: string | null
+          target_role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          experience_years?: number | null
+          full_name?: string | null
+          id?: string
+          location?: string | null
+          target_role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recommendations: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          match_score: number | null
+          missing_skills: string[] | null
+          reasoning: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          match_score?: number | null
+          missing_skills?: string[] | null
+          reasoning?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          match_score?: number | null
+          missing_skills?: string[] | null
+          reasoning?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resumes: {
+        Row: {
+          file_name: string | null
+          file_url: string | null
+          id: string
+          parsed_data: Json | null
+          raw_text: string | null
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          parsed_data?: Json | null
+          raw_text?: string | null
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          parsed_data?: Json | null
+          raw_text?: string | null
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      skills: {
+        Row: {
+          category: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
