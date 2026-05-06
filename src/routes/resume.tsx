@@ -78,12 +78,12 @@ function ResumePage() {
       if (savedResume) {
         await supabase
           .from("resumes")
-          .update({ raw_text: resumeText, parsed_data: parsed })
+          .update({ raw_text: resumeText, parsed_data: parsed as unknown as Record<string, never> })
           .eq("id", savedResume.id as string);
       } else {
         const { data: newResume } = await supabase
           .from("resumes")
-          .insert({ user_id: user.id, raw_text: resumeText, parsed_data: parsed })
+          .insert({ user_id: user.id, raw_text: resumeText, parsed_data: parsed as unknown as Record<string, never> })
           .select()
           .single();
         if (newResume) setSavedResume(newResume);

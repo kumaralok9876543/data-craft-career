@@ -103,14 +103,14 @@ function JobDetailPage() {
             {job.experience_required && (
               <span className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                {job.experience_required as string}
+                {String(job.experience_required)}
               </span>
             )}
             {job.salary && (
-              <Badge variant="secondary">{job.salary as string}</Badge>
+              <Badge variant="secondary">{String(job.salary)}</Badge>
             )}
             {job.posted_date && (
-              <span>{job.posted_date as string}</span>
+              <span>{String(job.posted_date)}</span>
             )}
           </div>
 
@@ -119,7 +119,7 @@ function JobDetailPage() {
           {job.description ? (
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <h3 className="text-lg font-semibold mb-3">Job Description</h3>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">{job.description as string}</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">{String(job.description)}</p>
             </div>
           ) : (
             <p className="text-muted-foreground text-sm">
