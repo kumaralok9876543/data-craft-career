@@ -135,7 +135,7 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
       .object({
         keyword: z.string().min(1).max(200).default("Data Engineer"),
         location: z.string().min(1).max(100).default("India"),
-        limit: z.number().min(1).max(50).default(25),
+        limit: z.number().min(1).max(250).default(150),
       }).parse
   )
   .handler(async ({ data }) => {
@@ -164,7 +164,7 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
       return { fetched: 0, message: "No new jobs found from LinkedIn. Try again later." };
     }
 
-    let inserted = 0;
+    let saved = 0;
     for (const job of jobs) {
       // Upsert company
       const { data: companyData } = await supabase
@@ -186,13 +186,13 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
           source_url: job.jobUrl || `https://linkedin.com/jobs/search?keywords=${encodeURIComponent(job.position)}`,
           apply_link: job.jobUrl || null,
           experience_required: "1-2 years",
-          description: `${job.position} at ${job.company} in ${job.location}`,
+          description: `${job.position} at ${job.company} in ${job.location || data.location}`,
         },
         { onConflict: "source_url" }
       );
 
-      if (!error) inserted++;
+      if (!error) saved++;
     }
 
-    return { fetched: inserted, message: `Fetched ${inserted} new jobs from LinkedIn!` };
+    return { fetched: saved, scraped: jobs.length, message: `Scraped ${jobs.length} Data Engineer jobs and saved ${saved} listings.` };
   });
