@@ -6,7 +6,6 @@ import { JobCard } from "@/components/JobCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Search, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { fetchJobsFromLinkedIn } from "@/server/jobs.functions";
@@ -49,6 +48,11 @@ function DashboardPage() {
       .from("jobs")
       .select("*", { count: "exact" })
       .ilike("title", "%data engineer%")
+      .not("title", "ilike", "%senior%")
+      .not("title", "ilike", "%staff%")
+      .not("title", "ilike", "%principal%")
+      .not("title", "ilike", "%architect%")
+      .not("title", "ilike", "%manager%")
       .order("created_at", { ascending: false })
       .limit(500);
 
@@ -59,12 +63,12 @@ function DashboardPage() {
       query = query.ilike("location", `%${location}%`);
     }
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     if (error) {
       toast.error("Failed to load jobs");
     } else {
       setJobs(data || []);
-      setTotalJobs(data?.length || 0);
+      setTotalJobs(count ?? data?.length ?? 0);
     }
     setLoading(false);
   }, [search, location]);
