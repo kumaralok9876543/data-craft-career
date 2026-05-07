@@ -6,7 +6,6 @@ import { JobCard } from "@/components/JobCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Search, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { fetchJobsFromLinkedIn } from "@/server/jobs.functions";
@@ -39,8 +38,7 @@ function DashboardPage() {
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("all");
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
-  const [page, setPage] = useState(0);
-  const pageSize = 20;
+  const [totalJobs, setTotalJobs] = useState(0);
 
   const fetchJobsFn = useServerFn(fetchJobsFromLinkedIn);
 
@@ -48,9 +46,15 @@ function DashboardPage() {
     setLoading(true);
     let query = supabase
       .from("jobs")
-      .select("*")
+      .select("*", { count: "exact" })
+      .ilike("title", "%data engineer%")
+      .not("title", "ilike", "%senior%")
+      .not("title", "ilike", "%staff%")
+      .not("title", "ilike", "%principal%")
+      .not("title", "ilike", "%architect%")
+      .not("title", "ilike", "%manager%")
       .order("created_at", { ascending: false })
-      .range(page * pageSize, (page + 1) * pageSize - 1);
+      .limit(500);
 
     if (search) {
       query = query.or(`title.ilike.%${search}%,company_name.ilike.%${search}%`);
@@ -59,14 +63,15 @@ function DashboardPage() {
       query = query.ilike("location", `%${location}%`);
     }
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     if (error) {
       toast.error("Failed to load jobs");
     } else {
       setJobs(data || []);
+      setTotalJobs(count ?? data?.length ?? 0);
     }
     setLoading(false);
-  }, [page, search, location]);
+  }, [search, location]);
 
   const loadBookmarks = useCallback(async () => {
     if (!user) return;
@@ -90,7 +95,7 @@ function DashboardPage() {
   const handleFetchNew = async () => {
     setFetching(true);
     try {
-      const result = await fetchJobsFn({ data: { keyword: "Data Engineer", location: "India", limit: 25 } });
+      const result = await fetchJobsFn({ data: { keyword: "Data Engineer", location: "India", limit: 150 } });
       toast.success(result.message);
       loadJobs();
     } catch {
@@ -125,7 +130,7 @@ function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Data Engineering Jobs</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {jobs.length} jobs found • Entry-level roles in India
+            {totalJobs} Data Engineer jobs found • Entry-level roles in India
           </p>
         </div>
         <Button onClick={handleFetchNew} disabled={fetching} variant="outline" className="gap-2">
@@ -141,11 +146,11 @@ function DashboardPage() {
           <Input
             placeholder="Search by title or company..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
-        <Select value={location} onValueChange={(v) => { setLocation(v); setPage(0); }}>
+        <Select value={location} onValueChange={setLocation}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Location" />
           </SelectTrigger>
@@ -185,19 +190,6 @@ function DashboardPage() {
           ))
         )}
       </div>
-
-      {/* Pagination */}
-      {jobs.length > 0 && (
-        <div className="mt-6 flex items-center justify-center gap-3">
-          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-            Previous
-          </Button>
-          <Badge variant="secondary">Page {page + 1}</Badge>
-          <Button variant="outline" size="sm" disabled={jobs.length < pageSize} onClick={() => setPage(page + 1)}>
-            Next
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

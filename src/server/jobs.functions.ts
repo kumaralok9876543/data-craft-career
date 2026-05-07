@@ -1,10 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+type LinkedInJob = {
+  position: string;
+  company: string;
+  companyLogo: string;
+  location: string;
+  date: string;
+  agoTime: string;
+  salary: string;
+  jobUrl: string;
+};
+
 function buildLinkedInUrl(keyword: string, location: string, start: number) {
   const params = new URLSearchParams();
-  params.append("keywords", keyword.replace(/\s+/g, "+"));
-  params.append("location", location.replace(/\s+/g, "+"));
+  params.append("keywords", keyword);
+  params.append("location", location);
   params.append("f_TPR", "r2592000"); // past month
   params.append("f_E", "2"); // entry level
   params.append("start", String(start));
@@ -12,25 +23,46 @@ function buildLinkedInUrl(keyword: string, location: string, start: number) {
   return `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?${params.toString()}`;
 }
 
+function normalizeLinkedInJobUrl(rawUrl: string) {
+  if (!rawUrl) return "";
+  try {
+    const url = new URL(rawUrl, "https://www.linkedin.com");
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return rawUrl.split("?")[0];
+  }
+}
+
+function isDataEngineeringRole(title: string) {
+  const normalized = title.toLowerCase().replace(/&amp;/g, "&");
+  const dataEngineerLike =
+    /\bdata\s*engineer\b/.test(normalized) ||
+    /\bdata\s*engineering\b/.test(normalized) ||
+    /\betl\s*data\s*engineer\b/.test(normalized) ||
+    /\bbig\s*data\s*engineer\b/.test(normalized) ||
+    /\b(data platform|data warehouse|data pipeline|analytics)\s*engineer\b/.test(normalized);
+
+  if (!dataEngineerLike) return false;
+
+  const unrelated = /\b(software engineer|data analyst|business analyst|data scientist|scientist|operator|data entry|nurse|security|marketing|sales|architect|manager|director|principal|staff)\b/.test(
+    normalized,
+  );
+
+  return !unrelated;
+}
+
 async function scrapeLinkedInJobs(keyword: string, location: string, limit: number) {
   const { load } = await import("cheerio");
-
-  const allJobs: Array<{
-    position: string;
-    company: string;
-    companyLogo: string;
-    location: string;
-    date: string;
-    agoTime: string;
-    salary: string;
-    jobUrl: string;
-  }> = [];
+  const allJobs: LinkedInJob[] = [];
+  const seenJobUrls = new Set<string>();
 
   let start = 0;
-  const batchSize = 25;
-  let attempts = 0;
+  const batchSize = 10;
+  const maxPages = 35;
+  let emptyPages = 0;
+  let pagesScraped = 0;
 
-  while (allJobs.length < limit && attempts < 3) {
+  while (allJobs.length < limit && emptyPages < 3 && pagesScraped < maxPages) {
     const url = buildLinkedInUrl(keyword, location, start);
     console.log("Fetching LinkedIn URL:", url);
 
@@ -47,7 +79,9 @@ async function scrapeLinkedInJobs(keyword: string, location: string, limit: numb
 
       if (!response.ok) {
         console.error(`LinkedIn returned ${response.status}`);
-        attempts++;
+        emptyPages++;
+        start += batchSize;
+        pagesScraped++;
         continue;
       }
 
@@ -68,21 +102,27 @@ async function scrapeLinkedInJobs(keyword: string, location: string, limit: numb
         const dateEl = job.find("time");
         const date = dateEl.attr("datetime") || "";
         const salary = job.find(".job-search-card__salary-info").text().trim().replace(/\s+/g, " ");
-        const jobUrl = job.find(".base-card__full-link").attr("href") || "";
+        const jobUrl = normalizeLinkedInJobUrl(job.find(".base-card__full-link").attr("href") || "");
         const companyLogo = job.find(".artdeco-entity-image").attr("data-delayed-url") || "";
         const agoTime = job.find(".job-search-card__listdate").text().trim();
 
+        if (!isDataEngineeringRole(position) || !jobUrl || seenJobUrls.has(jobUrl)) return;
+
+        seenJobUrls.add(jobUrl);
         allJobs.push({ position, company, companyLogo, location: loc, date, salary: salary || "", jobUrl, agoTime });
         batchCount++;
       });
 
       console.log(`Batch yielded ${batchCount} jobs, total: ${allJobs.length}`);
 
-      if (batchCount === 0) break;
+      emptyPages = batchCount === 0 ? emptyPages + 1 : 0;
       start += batchSize;
+      pagesScraped++;
     } catch (err) {
       console.error("Fetch error:", err);
-      attempts++;
+      emptyPages++;
+      start += batchSize;
+      pagesScraped++;
     }
   }
 
@@ -95,7 +135,7 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
       .object({
         keyword: z.string().min(1).max(200).default("Data Engineer"),
         location: z.string().min(1).max(100).default("India"),
-        limit: z.number().min(1).max(50).default(25),
+        limit: z.number().min(1).max(250).default(150),
       }).parse
   )
   .handler(async ({ data }) => {
@@ -124,7 +164,7 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
       return { fetched: 0, message: "No new jobs found from LinkedIn. Try again later." };
     }
 
-    let inserted = 0;
+    let saved = 0;
     for (const job of jobs) {
       // Upsert company
       const { data: companyData } = await supabase
@@ -146,13 +186,13 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
           source_url: job.jobUrl || `https://linkedin.com/jobs/search?keywords=${encodeURIComponent(job.position)}`,
           apply_link: job.jobUrl || null,
           experience_required: "1-2 years",
-          description: `${job.position} at ${job.company} in ${job.location}`,
+          description: `${job.position} at ${job.company} in ${job.location || data.location}`,
         },
         { onConflict: "source_url" }
       );
 
-      if (!error) inserted++;
+      if (!error) saved++;
     }
 
-    return { fetched: inserted, message: `Fetched ${inserted} new jobs from LinkedIn!` };
+    return { fetched: saved, scraped: jobs.length, message: `Scraped ${jobs.length} Data Engineer jobs and saved ${saved} listings.` };
   });
