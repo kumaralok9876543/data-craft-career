@@ -198,10 +198,16 @@ function DashboardPage() {
             {selectedSkills.size > 0 && ` • ${selectedSkills.size} skill${selectedSkills.size > 1 ? "s" : ""} selected`}
           </p>
         </div>
-        <Button onClick={handleFetchNew} disabled={fetching} variant="outline" className="gap-2">
-          {fetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          {fetching ? "Fetching..." : "Fetch New Jobs"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleRepairJobs} disabled={repairing} variant="outline" className="gap-2" title="Re-fetch job details and fix experience levels">
+            {repairing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {repairing ? "Repairing..." : "Fix Experience"}
+          </Button>
+          <Button onClick={handleFetchNew} disabled={fetching} variant="outline" className="gap-2">
+            {fetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {fetching ? "Fetching..." : "Fetch New Jobs"}
+          </Button>
+        </div>
       </div>
 
       {/* Filters Row 1: Search + Location + Experience */}
