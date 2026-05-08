@@ -40,6 +40,7 @@ const EXPERIENCE_LEVELS = [
   { value: "3-4 years", label: "3-4 years" },
   { value: "5-8 years", label: "5-8 years" },
   { value: "8+ years", label: "8+ years" },
+  { value: "Not specified", label: "Not specified" },
 ];
 
 const SKILL_CHIPS = [
