@@ -107,11 +107,13 @@ export type Database = {
           company_name: string
           created_at: string
           description: string | null
+          experience_bucket: string | null
           experience_required: string | null
           id: string
           location: string
           posted_date: string | null
           salary: string | null
+          skills_extracted: string[] | null
           source: string
           source_url: string | null
           title: string
@@ -122,11 +124,13 @@ export type Database = {
           company_name: string
           created_at?: string
           description?: string | null
+          experience_bucket?: string | null
           experience_required?: string | null
           id?: string
           location?: string
           posted_date?: string | null
           salary?: string | null
+          skills_extracted?: string[] | null
           source?: string
           source_url?: string | null
           title: string
@@ -137,11 +141,13 @@ export type Database = {
           company_name?: string
           created_at?: string
           description?: string | null
+          experience_bucket?: string | null
           experience_required?: string | null
           id?: string
           location?: string
           posted_date?: string | null
           salary?: string | null
+          skills_extracted?: string[] | null
           source?: string
           source_url?: string | null
           title?: string
