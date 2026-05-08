@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, RefreshCw, Loader2, X, Star } from "lucide-react";
 import { toast } from "sonner";
-import { fetchJobsFromLinkedIn } from "@/server/jobs.functions";
+import { fetchJobsFromLinkedIn, repairExistingJobs } from "@/server/jobs.functions";
 import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/dashboard")({
