@@ -54,6 +54,7 @@ function DashboardPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
+  const [repairing, setRepairing] = useState(false);
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [experienceFilter, setExperienceFilter] = useState("1-2 years");
