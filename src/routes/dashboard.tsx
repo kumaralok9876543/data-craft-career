@@ -152,6 +152,7 @@ function DashboardPage() {
     setRepairing(false);
   };
 
+  const toggleBookmark = async (jobId: string) => {
     if (!user) {
       toast.error("Sign in to bookmark jobs");
       return;
