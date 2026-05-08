@@ -42,40 +42,75 @@ function extractSkills(text: string): string[] {
   return Array.from(found).slice(0, 20);
 }
 
+/**
+ * Extract experience bucket from the FULL job description text.
+ * We look for patterns like "7-10 Years", "3+ years", "Work Experience - 5-8 Years" etc.
+ * Only falls back to title-based keywords if no year pattern is found in description.
+ */
 function extractExperienceBucket(title: string, description: string): string {
-  const combined = `${title} ${description}`.toLowerCase();
+  // Prioritize description over title — description has the real requirements
+  const descLower = description.toLowerCase();
 
-  // Try to find explicit year patterns
-  const yearMatch = combined.match(/(\d+)\s*[-–to]+\s*(\d+)\s*(?:years?|yrs?)/i);
-  if (yearMatch) {
-    const low = parseInt(yearMatch[1]);
-    const high = parseInt(yearMatch[2]);
-    const mid = (low + high) / 2;
-    if (mid <= 1) return "0-1 years";
-    if (mid <= 2.5) return "1-2 years";
-    if (mid <= 4.5) return "3-4 years";
-    if (mid <= 8) return "5-8 years";
-    return "8+ years";
+  // Pattern 1: "X-Y years" or "X to Y years" — search description first
+  const rangeMatches = [...descLower.matchAll(/(\d+)\s*[-–to]+\s*(\d+)\s*(?:years?|yrs?)/gi)];
+  if (rangeMatches.length > 0) {
+    // Use the FIRST match in description as it's usually the primary requirement
+    const low = parseInt(rangeMatches[0][1]);
+    const high = parseInt(rangeMatches[0][2]);
+    return bucketFromRange(low, high);
   }
 
-  const plusMatch = combined.match(/(\d+)\+?\s*(?:years?|yrs?)/i);
-  if (plusMatch) {
-    const num = parseInt(plusMatch[1]);
-    if (num <= 1) return "0-1 years";
-    if (num <= 2) return "1-2 years";
-    if (num <= 4) return "3-4 years";
-    if (num <= 8) return "5-8 years";
-    return "8+ years";
+  // Pattern 2: "X+ years" or "X years" in description
+  const plusMatches = [...descLower.matchAll(/(\d+)\+?\s*(?:years?|yrs?)\s*(?:of)?\s*(?:experience|exp|work)?/gi)];
+  if (plusMatches.length > 0) {
+    // Take the highest year number as the primary requirement
+    const years = plusMatches.map((m) => parseInt(m[1]));
+    const maxYear = Math.max(...years);
+    return bucketFromSingle(maxYear);
   }
 
-  // Infer from seniority keywords
-  if (/\b(intern|trainee|fresher|graduate|entry[\s-]*level)\b/i.test(combined)) return "0-1 years";
-  if (/\b(junior|jr\.?|associate)\b/i.test(combined)) return "1-2 years";
-  if (/\b(mid[\s-]*level|intermediate)\b/i.test(combined)) return "3-4 years";
-  if (/\b(senior|sr\.?|lead)\b/i.test(combined)) return "5-8 years";
-  if (/\b(staff|principal|director|head|vp|architect|manager)\b/i.test(combined)) return "8+ years";
+  // Pattern 3: "experience: X-Y" or "experience - X-Y" 
+  const expLabelMatch = descLower.match(/(?:experience|exp)\s*[-:]\s*(\d+)\s*[-–to]+\s*(\d+)/i);
+  if (expLabelMatch) {
+    return bucketFromRange(parseInt(expLabelMatch[1]), parseInt(expLabelMatch[2]));
+  }
 
-  return "1-2 years"; // default for entry-level focused search
+  // Now check title as fallback
+  const titleLower = title.toLowerCase();
+  const titleRange = titleLower.match(/(\d+)\s*[-–to]+\s*(\d+)\s*(?:years?|yrs?)/i);
+  if (titleRange) {
+    return bucketFromRange(parseInt(titleRange[1]), parseInt(titleRange[2]));
+  }
+  const titlePlus = titleLower.match(/(\d+)\+?\s*(?:years?|yrs?)/i);
+  if (titlePlus) {
+    return bucketFromSingle(parseInt(titlePlus[1]));
+  }
+
+  // Keyword-based inference from title only
+  if (/\b(intern|trainee|fresher|graduate|entry[\s-]*level)\b/i.test(titleLower)) return "0-1 years";
+  if (/\b(junior|jr\.?|associate)\b/i.test(titleLower)) return "1-2 years";
+  if (/\b(mid[\s-]*level|intermediate)\b/i.test(titleLower)) return "3-4 years";
+  if (/\b(senior|sr\.?|lead|staff)\b/i.test(titleLower)) return "5-8 years";
+  if (/\b(principal|director|head|vp|architect|manager)\b/i.test(titleLower)) return "8+ years";
+
+  return "Not specified";
+}
+
+function bucketFromRange(low: number, high: number): string {
+  const mid = (low + high) / 2;
+  if (mid <= 1) return "0-1 years";
+  if (mid <= 2.5) return "1-2 years";
+  if (mid <= 4.5) return "3-4 years";
+  if (mid <= 8) return "5-8 years";
+  return "8+ years";
+}
+
+function bucketFromSingle(num: number): string {
+  if (num <= 1) return "0-1 years";
+  if (num <= 2) return "1-2 years";
+  if (num <= 4) return "3-4 years";
+  if (num <= 8) return "5-8 years";
+  return "8+ years";
 }
 
 function isDataEngineeringRole(title: string) {
@@ -111,12 +146,56 @@ function normalizeLinkedInJobUrl(rawUrl: string) {
   }
 }
 
+const FETCH_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+  Referer: "https://www.linkedin.com/jobs",
+};
+
+/**
+ * Fetch the actual job detail page from LinkedIn to get the full description.
+ */
+async function fetchJobDescription(jobUrl: string): Promise<string> {
+  if (!jobUrl) return "";
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    const response = await fetch(jobUrl, {
+      signal: controller.signal,
+      headers: FETCH_HEADERS,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) return "";
+
+    const html = await response.text();
+    const { load } = await import("cheerio");
+    const $ = load(html);
+
+    // LinkedIn job detail pages have description in these selectors
+    const descriptionHtml =
+      $(".show-more-less-html__markup").text().trim() ||
+      $(".description__text").text().trim() ||
+      $(".core-section-container__content").text().trim() ||
+      "";
+
+    // Also grab the criteria section (experience, employment type etc.)
+    const criteria = $(".description__job-criteria-list").text().trim();
+
+    return `${descriptionHtml} ${criteria}`.trim();
+  } catch {
+    return "";
+  }
+}
+
 async function scrapeLinkedInJobs(keyword: string, location: string, limit: number) {
   const { load } = await import("cheerio");
-  const allJobs: LinkedInJob[] = [];
+  const allJobs: (LinkedInJob & { fullDescription: string })[] = [];
   const seenJobUrls = new Set<string>();
 
-  // Scrape multiple experience levels: 1=intern, 2=entry, 3=associate, 4=mid-senior, 5=director
   const expLevels = ["2", "3", "4", "1", "5"];
 
   for (const expLevel of expLevels) {
@@ -137,13 +216,7 @@ async function scrapeLinkedInJobs(keyword: string, location: string, limit: numb
 
         const response = await fetch(url, {
           signal: controller.signal,
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            Referer: "https://www.linkedin.com/jobs",
-          },
+          headers: FETCH_HEADERS,
         });
 
         clearTimeout(timeoutId);
@@ -159,6 +232,8 @@ async function scrapeLinkedInJobs(keyword: string, location: string, limit: numb
         const $ = load(html);
         const jobElements = $("li");
         let batchCount = 0;
+
+        const batchJobs: LinkedInJob[] = [];
 
         jobElements.each((_i, el) => {
           const job = $(el);
@@ -179,15 +254,22 @@ async function scrapeLinkedInJobs(keyword: string, location: string, limit: numb
           if (!jobUrl || seenJobUrls.has(jobUrl)) return;
 
           seenJobUrls.add(jobUrl);
-          allJobs.push({ position, company, companyLogo, location: loc, date, salary: salary || "", jobUrl, agoTime });
+          batchJobs.push({ position, company, companyLogo, location: loc, date, salary: salary || "", jobUrl, agoTime });
           batchCount++;
         });
+
+        // Fetch detail pages for this batch (with small delays)
+        for (const job of batchJobs) {
+          const fullDescription = await fetchJobDescription(job.jobUrl);
+          allJobs.push({ ...job, fullDescription });
+          // Small delay to avoid rate limiting
+          await new Promise((r) => setTimeout(r, 300));
+        }
 
         emptyPages = batchCount === 0 ? emptyPages + 1 : 0;
         start += batchSize;
         pagesScraped++;
 
-        // Small delay between requests to avoid rate limiting
         await new Promise((r) => setTimeout(r, 400));
       } catch (err) {
         console.error("Fetch error:", err);
@@ -238,9 +320,9 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
 
     let saved = 0;
     for (const job of jobs) {
-      const descriptionText = `${job.position} at ${job.company} in ${job.location || data.location}. ${job.salary ? "Salary: " + job.salary + "." : ""}`;
-      const skills = extractSkills(`${job.position} ${descriptionText}`);
-      const experienceBucket = extractExperienceBucket(job.position, descriptionText);
+      const fullText = `${job.position} ${job.fullDescription}`;
+      const skills = extractSkills(fullText);
+      const experienceBucket = extractExperienceBucket(job.position, job.fullDescription);
 
       const { data: companyData } = await supabase
         .from("companies")
@@ -262,7 +344,7 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
           experience_required: experienceBucket,
           experience_bucket: experienceBucket,
           skills_extracted: skills,
-          description: descriptionText,
+          description: job.fullDescription || `${job.position} at ${job.company} in ${job.location || data.location}`,
         },
         { onConflict: "source_url" }
       );
@@ -274,5 +356,92 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
       fetched: saved,
       scraped: jobs.length,
       message: `Scraped ${jobs.length} Data Engineer jobs and saved ${saved} new listings.`,
+    };
+  });
+
+/**
+ * Repair existing jobs in the database by re-fetching their detail pages
+ * and correcting experience_bucket and skills.
+ */
+export const repairExistingJobs = createServerFn({ method: "POST" })
+  .handler(async () => {
+    const { createClient } = await import("@supabase/supabase-js");
+
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error("Missing backend configuration");
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    // Get all jobs with apply_link
+    const { data: existingJobs, error } = await supabase
+      .from("jobs")
+      .select("id, title, apply_link, description")
+      .not("apply_link", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    if (error || !existingJobs) {
+      return { repaired: 0, message: "Failed to load existing jobs." };
+    }
+
+    let repaired = 0;
+    let failed = 0;
+
+    for (const job of existingJobs) {
+      try {
+        const fullDescription = await fetchJobDescription(job.apply_link!);
+
+        if (!fullDescription || fullDescription.length < 20) {
+          // Can't get description, try to re-extract from existing description
+          const existingDesc = job.description || "";
+          const bucket = extractExperienceBucket(job.title, existingDesc);
+          const skills = extractSkills(`${job.title} ${existingDesc}`);
+
+          await supabase
+            .from("jobs")
+            .update({
+              experience_bucket: bucket,
+              experience_required: bucket,
+              skills_extracted: skills,
+            })
+            .eq("id", job.id);
+
+          repaired++;
+        } else {
+          const bucket = extractExperienceBucket(job.title, fullDescription);
+          const skills = extractSkills(`${job.title} ${fullDescription}`);
+
+          await supabase
+            .from("jobs")
+            .update({
+              experience_bucket: bucket,
+              experience_required: bucket,
+              skills_extracted: skills,
+              description: fullDescription,
+            })
+            .eq("id", job.id);
+
+          repaired++;
+        }
+
+        // Delay between requests
+        await new Promise((r) => setTimeout(r, 350));
+      } catch (err) {
+        console.error(`Failed to repair job ${job.id}:`, err);
+        failed++;
+      }
+    }
+
+    return {
+      repaired,
+      failed,
+      total: existingJobs.length,
+      message: `Repaired ${repaired}/${existingJobs.length} jobs. ${failed > 0 ? `${failed} failed.` : ""}`,
     };
   });
