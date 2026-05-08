@@ -11,6 +11,7 @@ interface JobCardProps {
     company_name: string;
     location: string;
     experience_required?: string | null;
+    experience_bucket?: string | null;
     salary?: string | null;
     posted_date?: string | null;
     source: string;
@@ -63,7 +64,12 @@ export function JobCard({ job, isBookmarked, onToggleBookmark, matchScore }: Job
             <MapPin className="h-3 w-3" />
             {job.location}
           </span>
-          {job.experience_required && (
+          {job.experience_bucket && (
+            <Badge variant="outline" className="text-xs">
+              {job.experience_bucket}
+            </Badge>
+          )}
+          {job.experience_required && !job.experience_bucket && (
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {job.experience_required}
