@@ -11,6 +11,7 @@ interface JobCardProps {
     company_name: string;
     location: string;
     experience_required?: string | null;
+    experience_bucket?: string | null;
     salary?: string | null;
     posted_date?: string | null;
     source: string;
