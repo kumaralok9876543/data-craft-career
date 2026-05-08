@@ -140,7 +140,18 @@ function DashboardPage() {
     setFetching(false);
   };
 
-  const toggleBookmark = async (jobId: string) => {
+  const handleRepairJobs = async () => {
+    setRepairing(true);
+    try {
+      const result = await repairJobsFn();
+      toast.success(result.message);
+      loadJobs();
+    } catch {
+      toast.error("Failed to repair jobs. Please try again.");
+    }
+    setRepairing(false);
+  };
+
     if (!user) {
       toast.error("Sign in to bookmark jobs");
       return;
