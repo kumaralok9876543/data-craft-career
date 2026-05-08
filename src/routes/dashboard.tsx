@@ -63,6 +63,7 @@ function DashboardPage() {
   const [totalJobs, setTotalJobs] = useState(0);
 
   const fetchJobsFn = useServerFn(fetchJobsFromLinkedIn);
+  const repairJobsFn = useServerFn(repairExistingJobs);
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
