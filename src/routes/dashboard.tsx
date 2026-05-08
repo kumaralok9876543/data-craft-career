@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, RefreshCw, Loader2, X, Star } from "lucide-react";
 import { toast } from "sonner";
-import { fetchJobsFromLinkedIn } from "@/server/jobs.functions";
+import { fetchJobsFromLinkedIn, repairExistingJobs } from "@/server/jobs.functions";
 import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/dashboard")({
@@ -40,6 +40,7 @@ const EXPERIENCE_LEVELS = [
   { value: "3-4 years", label: "3-4 years" },
   { value: "5-8 years", label: "5-8 years" },
   { value: "8+ years", label: "8+ years" },
+  { value: "Not specified", label: "Not specified" },
 ];
 
 const SKILL_CHIPS = [
@@ -54,6 +55,7 @@ function DashboardPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
+  const [repairing, setRepairing] = useState(false);
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [experienceFilter, setExperienceFilter] = useState("1-2 years");
@@ -62,6 +64,7 @@ function DashboardPage() {
   const [totalJobs, setTotalJobs] = useState(0);
 
   const fetchJobsFn = useServerFn(fetchJobsFromLinkedIn);
+  const repairJobsFn = useServerFn(repairExistingJobs);
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
@@ -138,6 +141,18 @@ function DashboardPage() {
     setFetching(false);
   };
 
+  const handleRepairJobs = async () => {
+    setRepairing(true);
+    try {
+      const result = await repairJobsFn();
+      toast.success(result.message);
+      loadJobs();
+    } catch {
+      toast.error("Failed to repair jobs. Please try again.");
+    }
+    setRepairing(false);
+  };
+
   const toggleBookmark = async (jobId: string) => {
     if (!user) {
       toast.error("Sign in to bookmark jobs");
@@ -184,10 +199,16 @@ function DashboardPage() {
             {selectedSkills.size > 0 && ` • ${selectedSkills.size} skill${selectedSkills.size > 1 ? "s" : ""} selected`}
           </p>
         </div>
-        <Button onClick={handleFetchNew} disabled={fetching} variant="outline" className="gap-2">
-          {fetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          {fetching ? "Fetching..." : "Fetch New Jobs"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleRepairJobs} disabled={repairing} variant="outline" className="gap-2" title="Re-fetch job details and fix experience levels">
+            {repairing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {repairing ? "Repairing..." : "Fix Experience"}
+          </Button>
+          <Button onClick={handleFetchNew} disabled={fetching} variant="outline" className="gap-2">
+            {fetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {fetching ? "Fetching..." : "Fetch New Jobs"}
+          </Button>
+        </div>
       </div>
 
       {/* Filters Row 1: Search + Location + Experience */}
