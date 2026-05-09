@@ -358,6 +358,7 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
       const fullText = `${job.position} ${job.fullDescription}`;
       const skills = extractSkills(fullText);
       const experienceBucket = extractExperienceBucket(job.position, job.fullDescription);
+      const workMode = extractWorkMode(job.location || data.location, job.fullDescription);
 
       const { data: companyData } = await supabase
         .from("companies")
@@ -379,6 +380,7 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
           experience_required: experienceBucket,
           experience_bucket: experienceBucket,
           skills_extracted: skills,
+          work_mode: workMode,
           description: job.fullDescription || `${job.position} at ${job.company} in ${job.location || data.location}`,
         },
         { onConflict: "source_url" }
@@ -416,7 +418,7 @@ export const repairExistingJobs = createServerFn({ method: "POST" })
     // Get all jobs with apply_link
     const { data: existingJobs, error } = await supabase
       .from("jobs")
-      .select("id, title, apply_link, description")
+      .select("id, title, location, apply_link, description")
       .not("apply_link", "is", null)
       .order("created_at", { ascending: false })
       .limit(500);
@@ -437,6 +439,7 @@ export const repairExistingJobs = createServerFn({ method: "POST" })
           const existingDesc = job.description || "";
           const bucket = extractExperienceBucket(job.title, existingDesc);
           const skills = extractSkills(`${job.title} ${existingDesc}`);
+          const workMode = extractWorkMode(job.location || "", existingDesc);
 
           await supabase
             .from("jobs")
@@ -444,6 +447,7 @@ export const repairExistingJobs = createServerFn({ method: "POST" })
               experience_bucket: bucket,
               experience_required: bucket,
               skills_extracted: skills,
+              work_mode: workMode,
             })
             .eq("id", job.id);
 
@@ -451,6 +455,7 @@ export const repairExistingJobs = createServerFn({ method: "POST" })
         } else {
           const bucket = extractExperienceBucket(job.title, fullDescription);
           const skills = extractSkills(`${job.title} ${fullDescription}`);
+          const workMode = extractWorkMode(job.location || "", fullDescription);
 
           await supabase
             .from("jobs")
@@ -458,6 +463,7 @@ export const repairExistingJobs = createServerFn({ method: "POST" })
               experience_bucket: bucket,
               experience_required: bucket,
               skills_extracted: skills,
+              work_mode: workMode,
               description: fullDescription,
             })
             .eq("id", job.id);
