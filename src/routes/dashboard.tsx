@@ -30,6 +30,7 @@ interface Job {
   source_url: string | null;
   description: string | null;
   skills_extracted: string[] | null;
+  work_mode: string | null;
   created_at: string;
 }
 
@@ -50,6 +51,8 @@ const SKILL_CHIPS = [
   "Scala", "Java", "PostgreSQL",
 ];
 
+const WORK_MODES = ["all", "Remote", "Hybrid", "On-site", "Not specified"];
+
 function DashboardPage() {
   const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -59,11 +62,14 @@ function DashboardPage() {
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [experienceFilter, setExperienceFilter] = useState("1-2 years");
+  const [workModeFilter, setWorkModeFilter] = useState("all");
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
   const [hideApplied, setHideApplied] = useState(true);
   const [totalJobs, setTotalJobs] = useState(0);
+  const [totalDataEngineerJobs, setTotalDataEngineerJobs] = useState(0);
+  const [totalScrapedJobs, setTotalScrapedJobs] = useState(0);
 
   const fetchJobsFn = useServerFn(fetchJobsFromLinkedIn);
   const repairJobsFn = useServerFn(repairExistingJobs);
