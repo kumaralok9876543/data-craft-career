@@ -170,6 +170,26 @@ function DashboardPage() {
     }
   };
 
+  const toggleApplied = async (jobId: string) => {
+    if (!user) {
+      toast.error("Sign in to track applied jobs");
+      return;
+    }
+    if (appliedIds.has(jobId)) {
+      await supabase.from("applied_jobs").delete().eq("user_id", user.id).eq("job_id", jobId);
+      setAppliedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      toast.success("Unmarked as applied");
+    } else {
+      await supabase.from("applied_jobs").insert({ user_id: user.id, job_id: jobId });
+      setAppliedIds((prev) => new Set(prev).add(jobId));
+      toast.success("Marked as applied — moved to Applied tab");
+    }
+  };
+
   const toggleSkill = (skill: string) => {
     setSelectedSkills((prev) => {
       const next = new Set(prev);
@@ -299,6 +319,8 @@ function DashboardPage() {
               }}
               isBookmarked={bookmarkedIds.has(job.id)}
               onToggleBookmark={toggleBookmark}
+              isApplied={appliedIds.has(job.id)}
+              onToggleApplied={toggleApplied}
             />
           ))
         )}
