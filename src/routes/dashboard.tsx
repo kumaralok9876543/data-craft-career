@@ -92,6 +92,9 @@ function DashboardPage() {
     if (experienceFilter !== "all") {
       query = query.eq("experience_bucket", experienceFilter);
     }
+    if (workModeFilter !== "all") {
+      query = query.eq("work_mode", workModeFilter);
+    }
 
     const { data, error } = await query;
 
@@ -118,8 +121,15 @@ function DashboardPage() {
 
     setJobs(filtered);
     setTotalJobs(filtered.length);
+
+    const [{ count: deCount }, { count: scrapedCount }] = await Promise.all([
+      supabase.from("jobs").select("id", { count: "exact", head: true }).ilike("title", "%data%engineer%"),
+      supabase.from("jobs").select("id", { count: "exact", head: true }),
+    ]);
+    setTotalDataEngineerJobs(deCount || 0);
+    setTotalScrapedJobs(scrapedCount || 0);
     setLoading(false);
-  }, [search, locationFilter, experienceFilter, selectedSkills, hideApplied, appliedIds]);
+  }, [search, locationFilter, experienceFilter, workModeFilter, selectedSkills, hideApplied, appliedIds]);
 
   const loadAppliedAndBookmarks = useCallback(async () => {
     if (!user) return;
@@ -220,7 +230,10 @@ function DashboardPage() {
           <h1 className="text-2xl font-bold">Data Engineering Jobs</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {totalJobs} matching jobs
+            {` • ${totalDataEngineerJobs} Data Engineer jobs`}
+            {` • ${totalScrapedJobs} total scraped`}
             {experienceFilter !== "all" && ` • ${experienceFilter}`}
+            {workModeFilter !== "all" && ` • ${workModeFilter}`}
             {selectedSkills.size > 0 && ` • ${selectedSkills.size} skill${selectedSkills.size > 1 ? "s" : ""}`}
             {hideApplied && appliedIds.size > 0 && ` • ${appliedIds.size} applied hidden`}
           </p>
