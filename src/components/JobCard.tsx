@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
+import { MapPin, Clock, Bookmark, BookmarkCheck, ExternalLink, CheckCircle2, Circle } from "lucide-react";
 
 interface JobCardProps {
   job: {
@@ -21,9 +21,11 @@ interface JobCardProps {
   isBookmarked?: boolean;
   onToggleBookmark?: (jobId: string) => void;
   matchScore?: number | null;
+  isApplied?: boolean;
+  onToggleApplied?: (jobId: string) => void;
 }
 
-export function JobCard({ job, isBookmarked, onToggleBookmark, matchScore }: JobCardProps) {
+export function JobCard({ job, isBookmarked, onToggleBookmark, matchScore, isApplied, onToggleApplied }: JobCardProps) {
   return (
     <Card className="group transition-all hover:shadow-md hover:border-primary/30">
       <CardContent className="p-5">
@@ -98,6 +100,17 @@ export function JobCard({ job, isBookmarked, onToggleBookmark, matchScore }: Job
         <div className="mt-4 flex items-center justify-between">
           <span className="text-xs text-muted-foreground capitalize">{job.source}</span>
           <div className="flex items-center gap-2">
+            {onToggleApplied && (
+              <Button
+                variant={isApplied ? "default" : "outline"}
+                size="sm"
+                className="text-xs h-8 gap-1"
+                onClick={() => onToggleApplied(job.id)}
+              >
+                {isApplied ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
+                {isApplied ? "Applied" : "Mark Applied"}
+              </Button>
+            )}
             <Link to="/jobs/$jobId" params={{ jobId: job.id }}>
               <Button variant="outline" size="sm" className="text-xs h-8">
                 Details

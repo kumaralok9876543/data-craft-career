@@ -61,6 +61,8 @@ function DashboardPage() {
   const [experienceFilter, setExperienceFilter] = useState("1-2 years");
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
+  const [hideApplied, setHideApplied] = useState(true);
   const [totalJobs, setTotalJobs] = useState(0);
 
   const fetchJobsFn = useServerFn(fetchJobsFromLinkedIn);
@@ -85,7 +87,7 @@ function DashboardPage() {
       query = query.eq("experience_bucket", experienceFilter);
     }
 
-    const { data, error, count } = await query;
+    const { data, error } = await query;
 
     if (error) {
       toast.error("Failed to load jobs");
@@ -95,7 +97,6 @@ function DashboardPage() {
 
     let filtered = data || [];
 
-    // Client-side skill filter
     if (selectedSkills.size > 0) {
       filtered = filtered.filter((job) => {
         const jobSkills = (job.skills_extracted as string[] | null) || [];
@@ -105,29 +106,27 @@ function DashboardPage() {
       });
     }
 
-    setJobs(filtered);
-    setTotalJobs(selectedSkills.size > 0 ? filtered.length : (count ?? filtered.length));
-    setLoading(false);
-  }, [search, locationFilter, experienceFilter, selectedSkills]);
-
-  const loadBookmarks = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("bookmarks")
-      .select("job_id")
-      .eq("user_id", user.id);
-    if (data) {
-      setBookmarkedIds(new Set(data.map((b) => b.job_id)));
+    if (hideApplied && appliedIds.size > 0) {
+      filtered = filtered.filter((job) => !appliedIds.has(job.id));
     }
+
+    setJobs(filtered);
+    setTotalJobs(filtered.length);
+    setLoading(false);
+  }, [search, locationFilter, experienceFilter, selectedSkills, hideApplied, appliedIds]);
+
+  const loadAppliedAndBookmarks = useCallback(async () => {
+    if (!user) return;
+    const [bm, ap] = await Promise.all([
+      supabase.from("bookmarks").select("job_id").eq("user_id", user.id),
+      supabase.from("applied_jobs").select("job_id").eq("user_id", user.id),
+    ]);
+    if (bm.data) setBookmarkedIds(new Set(bm.data.map((b) => b.job_id)));
+    if (ap.data) setAppliedIds(new Set(ap.data.map((a) => a.job_id)));
   }, [user]);
 
-  useEffect(() => {
-    loadJobs();
-  }, [loadJobs]);
-
-  useEffect(() => {
-    loadBookmarks();
-  }, [loadBookmarks]);
+  useEffect(() => { loadJobs(); }, [loadJobs]);
+  useEffect(() => { loadAppliedAndBookmarks(); }, [loadAppliedAndBookmarks]);
 
   const handleFetchNew = async () => {
     setFetching(true);
@@ -171,6 +170,26 @@ function DashboardPage() {
     }
   };
 
+  const toggleApplied = async (jobId: string) => {
+    if (!user) {
+      toast.error("Sign in to track applied jobs");
+      return;
+    }
+    if (appliedIds.has(jobId)) {
+      await supabase.from("applied_jobs").delete().eq("user_id", user.id).eq("job_id", jobId);
+      setAppliedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      toast.success("Unmarked as applied");
+    } else {
+      await supabase.from("applied_jobs").insert({ user_id: user.id, job_id: jobId });
+      setAppliedIds((prev) => new Set(prev).add(jobId));
+      toast.success("Marked as applied — moved to Applied tab");
+    }
+  };
+
   const toggleSkill = (skill: string) => {
     setSelectedSkills((prev) => {
       const next = new Set(prev);
@@ -194,9 +213,10 @@ function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Data Engineering Jobs</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {totalJobs} jobs found
-            {experienceFilter !== "all" && ` • ${experienceFilter} experience`}
-            {selectedSkills.size > 0 && ` • ${selectedSkills.size} skill${selectedSkills.size > 1 ? "s" : ""} selected`}
+            {totalJobs} matching jobs
+            {experienceFilter !== "all" && ` • ${experienceFilter}`}
+            {selectedSkills.size > 0 && ` • ${selectedSkills.size} skill${selectedSkills.size > 1 ? "s" : ""}`}
+            {hideApplied && appliedIds.size > 0 && ` • ${appliedIds.size} applied hidden`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -300,6 +320,8 @@ function DashboardPage() {
               }}
               isBookmarked={bookmarkedIds.has(job.id)}
               onToggleBookmark={toggleBookmark}
+              isApplied={appliedIds.has(job.id)}
+              onToggleApplied={toggleApplied}
             />
           ))
         )}

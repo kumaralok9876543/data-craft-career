@@ -48,49 +48,43 @@ function extractSkills(text: string): string[] {
  * Only falls back to title-based keywords if no year pattern is found in description.
  */
 function extractExperienceBucket(title: string, description: string): string {
-  // Prioritize description over title — description has the real requirements
   const descLower = description.toLowerCase();
 
-  // Pattern 1: "X-Y years" or "X to Y years" — search description first
-  const rangeMatches = [...descLower.matchAll(/(\d+)\s*[-–to]+\s*(\d+)\s*(?:years?|yrs?)/gi)];
+  // Pattern: "yrs of exp- 14-16 yrs", "experience: 5-8 years", "exp - 3 to 5"
+  const labelRange = descLower.match(/(?:yrs?\s*of\s*exp|years?\s*of\s*exp|experience|exp)\s*[-:]?\s*(\d+)\s*(?:[-–to]+|to)\s*(\d+)\s*\+?\s*(?:years?|yrs?)?/i);
+  if (labelRange) {
+    return bucketFromRange(parseInt(labelRange[1]), parseInt(labelRange[2]));
+  }
+
+  // Pattern: "X-Y years" / "X-Y+ years" / "X to Y yrs"
+  const rangeMatches = [...descLower.matchAll(/(\d+)\s*(?:[-–]|\s+to\s+)\s*(\d+)\s*\+?\s*(?:years?|yrs?)/gi)];
   if (rangeMatches.length > 0) {
-    // Use the FIRST match in description as it's usually the primary requirement
     const low = parseInt(rangeMatches[0][1]);
     const high = parseInt(rangeMatches[0][2]);
     return bucketFromRange(low, high);
   }
 
-  // Pattern 2: "X+ years" or "X years" in description
-  const plusMatches = [...descLower.matchAll(/(\d+)\+?\s*(?:years?|yrs?)\s*(?:of)?\s*(?:experience|exp|work)?/gi)];
+  // Pattern: "X+ years" or "X years"
+  const plusMatches = [...descLower.matchAll(/(\d+)\s*\+?\s*(?:years?|yrs?)\s*(?:of)?\s*(?:experience|exp|work|hands[-\s]on)?/gi)];
   if (plusMatches.length > 0) {
-    // Take the highest year number as the primary requirement
-    const years = plusMatches.map((m) => parseInt(m[1]));
-    const maxYear = Math.max(...years);
-    return bucketFromSingle(maxYear);
+    const years = plusMatches.map((m) => parseInt(m[1])).filter((n) => n <= 30);
+    if (years.length > 0) {
+      const maxYear = Math.max(...years);
+      return bucketFromSingle(maxYear);
+    }
   }
 
-  // Pattern 3: "experience: X-Y" or "experience - X-Y" 
-  const expLabelMatch = descLower.match(/(?:experience|exp)\s*[-:]\s*(\d+)\s*[-–to]+\s*(\d+)/i);
-  if (expLabelMatch) {
-    return bucketFromRange(parseInt(expLabelMatch[1]), parseInt(expLabelMatch[2]));
-  }
-
-  // Now check title as fallback
+  // Fallback to title patterns
   const titleLower = title.toLowerCase();
   const titleRange = titleLower.match(/(\d+)\s*[-–to]+\s*(\d+)\s*(?:years?|yrs?)/i);
-  if (titleRange) {
-    return bucketFromRange(parseInt(titleRange[1]), parseInt(titleRange[2]));
-  }
+  if (titleRange) return bucketFromRange(parseInt(titleRange[1]), parseInt(titleRange[2]));
   const titlePlus = titleLower.match(/(\d+)\+?\s*(?:years?|yrs?)/i);
-  if (titlePlus) {
-    return bucketFromSingle(parseInt(titlePlus[1]));
-  }
+  if (titlePlus) return bucketFromSingle(parseInt(titlePlus[1]));
 
-  // Keyword-based inference from title only
   if (/\b(intern|trainee|fresher|graduate|entry[\s-]*level)\b/i.test(titleLower)) return "0-1 years";
-  if (/\b(junior|jr\.?|associate)\b/i.test(titleLower)) return "1-2 years";
-  if (/\b(mid[\s-]*level|intermediate)\b/i.test(titleLower)) return "3-4 years";
-  if (/\b(senior|sr\.?|lead|staff)\b/i.test(titleLower)) return "5-8 years";
+  if (/\b(junior|jr\.?|associate|\bI\b)\b/.test(title)) return "1-2 years";
+  if (/\b(mid[\s-]*level|intermediate|\bII\b)\b/.test(title)) return "3-4 years";
+  if (/\b(senior|sr\.?|lead|staff|\bIII\b)\b/.test(title)) return "5-8 years";
   if (/\b(principal|director|head|vp|architect|manager)\b/i.test(titleLower)) return "8+ years";
 
   return "Not specified";
@@ -157,38 +151,47 @@ const FETCH_HEADERS = {
 /**
  * Fetch the actual job detail page from LinkedIn to get the full description.
  */
+function extractJobId(jobUrl: string): string | null {
+  const m = jobUrl.match(/(\d{8,})(?:\?|$)/);
+  return m ? m[1] : null;
+}
+
 async function fetchJobDescription(jobUrl: string): Promise<string> {
   if (!jobUrl) return "";
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const jobId = extractJobId(jobUrl);
+  // Prefer the jobPosting API endpoint — much more reliable than the full page
+  const urls = jobId
+    ? [
+        `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`,
+        jobUrl,
+      ]
+    : [jobUrl];
 
-    const response = await fetch(jobUrl, {
-      signal: controller.signal,
-      headers: FETCH_HEADERS,
-    });
-    clearTimeout(timeoutId);
+  for (const url of urls) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const response = await fetch(url, { signal: controller.signal, headers: FETCH_HEADERS });
+      clearTimeout(timeoutId);
+      if (!response.ok) continue;
 
-    if (!response.ok) return "";
+      const html = await response.text();
+      const { load } = await import("cheerio");
+      const $ = load(html);
 
-    const html = await response.text();
-    const { load } = await import("cheerio");
-    const $ = load(html);
-
-    // LinkedIn job detail pages have description in these selectors
-    const descriptionHtml =
-      $(".show-more-less-html__markup").text().trim() ||
-      $(".description__text").text().trim() ||
-      $(".core-section-container__content").text().trim() ||
-      "";
-
-    // Also grab the criteria section (experience, employment type etc.)
-    const criteria = $(".description__job-criteria-list").text().trim();
-
-    return `${descriptionHtml} ${criteria}`.trim();
-  } catch {
-    return "";
+      const descriptionHtml =
+        $(".show-more-less-html__markup").text().trim() ||
+        $(".description__text").text().trim() ||
+        $(".core-section-container__content").text().trim() ||
+        "";
+      const criteria = $(".description__job-criteria-list").text().trim();
+      const combined = `${descriptionHtml} ${criteria}`.trim();
+      if (combined.length > 50) return combined;
+    } catch {
+      // try next URL
+    }
   }
+  return "";
 }
 
 async function scrapeLinkedInJobs(keyword: string, location: string, limit: number) {
