@@ -61,6 +61,8 @@ function DashboardPage() {
   const [experienceFilter, setExperienceFilter] = useState("1-2 years");
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
+  const [hideApplied, setHideApplied] = useState(true);
   const [totalJobs, setTotalJobs] = useState(0);
 
   const fetchJobsFn = useServerFn(fetchJobsFromLinkedIn);
@@ -95,7 +97,6 @@ function DashboardPage() {
 
     let filtered = data || [];
 
-    // Client-side skill filter
     if (selectedSkills.size > 0) {
       filtered = filtered.filter((job) => {
         const jobSkills = (job.skills_extracted as string[] | null) || [];
@@ -105,29 +106,27 @@ function DashboardPage() {
       });
     }
 
-    setJobs(filtered);
-    setTotalJobs(selectedSkills.size > 0 ? filtered.length : (count ?? filtered.length));
-    setLoading(false);
-  }, [search, locationFilter, experienceFilter, selectedSkills]);
-
-  const loadBookmarks = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("bookmarks")
-      .select("job_id")
-      .eq("user_id", user.id);
-    if (data) {
-      setBookmarkedIds(new Set(data.map((b) => b.job_id)));
+    if (hideApplied && appliedIds.size > 0) {
+      filtered = filtered.filter((job) => !appliedIds.has(job.id));
     }
+
+    setJobs(filtered);
+    setTotalJobs(filtered.length);
+    setLoading(false);
+  }, [search, locationFilter, experienceFilter, selectedSkills, hideApplied, appliedIds]);
+
+  const loadAppliedAndBookmarks = useCallback(async () => {
+    if (!user) return;
+    const [bm, ap] = await Promise.all([
+      supabase.from("bookmarks").select("job_id").eq("user_id", user.id),
+      supabase.from("applied_jobs").select("job_id").eq("user_id", user.id),
+    ]);
+    if (bm.data) setBookmarkedIds(new Set(bm.data.map((b) => b.job_id)));
+    if (ap.data) setAppliedIds(new Set(ap.data.map((a) => a.job_id)));
   }, [user]);
 
-  useEffect(() => {
-    loadJobs();
-  }, [loadJobs]);
-
-  useEffect(() => {
-    loadBookmarks();
-  }, [loadBookmarks]);
+  useEffect(() => { loadJobs(); }, [loadJobs]);
+  useEffect(() => { loadAppliedAndBookmarks(); }, [loadAppliedAndBookmarks]);
 
   const handleFetchNew = async () => {
     setFetching(true);
