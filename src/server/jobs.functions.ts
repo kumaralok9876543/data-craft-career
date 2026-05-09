@@ -42,16 +42,38 @@ function extractSkills(text: string): string[] {
   return Array.from(found).slice(0, 20);
 }
 
+function cleanText(text: string): string {
+  return text.replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+}
+
+function getTextWithSpacing($: any, selector: string): string {
+  const element = $(selector).first().clone();
+  element.find("br").replaceWith(" ");
+  element.find("p, li, div, section, h1, h2, h3, h4, span").each((_i: number, node: unknown) => {
+    $(node).append(" ");
+  });
+  return cleanText(element.text());
+}
+
+function extractWorkMode(location: string, description: string): string {
+  const text = `${location} ${description}`.toLowerCase();
+  if (/\b(hybrid|partly\s+remote)\b/i.test(text)) return "Hybrid";
+  if (/\b(remote|work\s+from\s+home|wfh|anywhere)\b/i.test(text) && !/\bnot\s+remote\b/i.test(text)) return "Remote";
+  if (/\b(on[-\s]?site|onsite|work\s+from\s+office|wfo|in[-\s]?office)\b/i.test(text)) return "On-site";
+  return "Not specified";
+}
+
 /**
  * Extract experience bucket from the FULL job description text.
  * We look for patterns like "7-10 Years", "3+ years", "Work Experience - 5-8 Years" etc.
  * Only falls back to title-based keywords if no year pattern is found in description.
  */
 function extractExperienceBucket(title: string, description: string): string {
-  const descLower = description.toLowerCase();
+  const normalizedDescription = cleanText(description);
+  const descLower = normalizedDescription.toLowerCase();
 
   // Pattern: "yrs of exp- 14-16 yrs", "experience: 5-8 years", "exp - 3 to 5"
-  const labelRange = descLower.match(/(?:yrs?\s*of\s*exp|years?\s*of\s*exp|experience|exp)\s*[-:]?\s*(\d+)\s*(?:[-–to]+|to)\s*(\d+)\s*\+?\s*(?:years?|yrs?)?/i);
+  const labelRange = descLower.match(/(?:yrs?\s*of\s*exp|years?\s*of\s*exp|experience|exp)\s*[-:]?\s*(\d+)\s*(?:[-–]|\s+to\s+)\s*(\d+)\s*\+?\s*(?:years?|yrs?)?/i);
   if (labelRange) {
     return bucketFromRange(parseInt(labelRange[1]), parseInt(labelRange[2]));
   }
@@ -74,17 +96,27 @@ function extractExperienceBucket(title: string, description: string): string {
     }
   }
 
+  // LinkedIn often hides "requirements added by the job poster" from guest pages,
+  // but still exposes seniority in the criteria block. Use that as a safer fallback
+  // before guessing from titles like "Data Engineer I".
+  const seniorityMatch = normalizedDescription.match(/seniority\s*level\s*([\s\S]{0,90}?)(?:employment\s*type|job\s*function|industries|$)/i);
+  const seniority = seniorityMatch ? seniorityMatch[1].toLowerCase() : "";
+  if (/\b(director|executive|head|vp|principal)\b/i.test(seniority)) return "8+ years";
+  if (/\b(mid[-\s]*senior|senior|lead|staff)\b/i.test(seniority)) return "5-8 years";
+  if (/\bassociate\b/i.test(seniority)) return "3-4 years";
+  if (/\b(entry[-\s]*level|internship|intern)\b/i.test(seniority)) return "0-1 years";
+
   // Fallback to title patterns
   const titleLower = title.toLowerCase();
-  const titleRange = titleLower.match(/(\d+)\s*[-–to]+\s*(\d+)\s*(?:years?|yrs?)/i);
+  const titleRange = titleLower.match(/(\d+)\s*(?:[-–]|\s+to\s+)\s*(\d+)\s*(?:years?|yrs?)/i);
   if (titleRange) return bucketFromRange(parseInt(titleRange[1]), parseInt(titleRange[2]));
   const titlePlus = titleLower.match(/(\d+)\+?\s*(?:years?|yrs?)/i);
   if (titlePlus) return bucketFromSingle(parseInt(titlePlus[1]));
 
   if (/\b(intern|trainee|fresher|graduate|entry[\s-]*level)\b/i.test(titleLower)) return "0-1 years";
-  if (/\b(junior|jr\.?|associate|\bI\b)\b/.test(title)) return "1-2 years";
-  if (/\b(mid[\s-]*level|intermediate|\bII\b)\b/.test(title)) return "3-4 years";
-  if (/\b(senior|sr\.?|lead|staff|\bIII\b)\b/.test(title)) return "5-8 years";
+  if (/\b(junior|jr\.?|associate)\b/i.test(titleLower)) return "1-2 years";
+  if (/\b(mid[\s-]*level|intermediate)\b/i.test(titleLower)) return "3-4 years";
+  if (/\b(senior|sr\.?|lead|staff)\b/i.test(titleLower)) return "5-8 years";
   if (/\b(principal|director|head|vp|architect|manager)\b/i.test(titleLower)) return "8+ years";
 
   return "Not specified";
