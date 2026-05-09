@@ -30,6 +30,7 @@ interface Job {
   source_url: string | null;
   description: string | null;
   skills_extracted: string[] | null;
+  work_mode: string | null;
   created_at: string;
 }
 
@@ -50,6 +51,8 @@ const SKILL_CHIPS = [
   "Scala", "Java", "PostgreSQL",
 ];
 
+const WORK_MODES = ["all", "Remote", "Hybrid", "On-site", "Not specified"];
+
 function DashboardPage() {
   const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -59,11 +62,14 @@ function DashboardPage() {
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [experienceFilter, setExperienceFilter] = useState("1-2 years");
+  const [workModeFilter, setWorkModeFilter] = useState("all");
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
   const [hideApplied, setHideApplied] = useState(true);
   const [totalJobs, setTotalJobs] = useState(0);
+  const [totalDataEngineerJobs, setTotalDataEngineerJobs] = useState(0);
+  const [totalScrapedJobs, setTotalScrapedJobs] = useState(0);
 
   const fetchJobsFn = useServerFn(fetchJobsFromLinkedIn);
   const repairJobsFn = useServerFn(repairExistingJobs);
@@ -85,6 +91,9 @@ function DashboardPage() {
     }
     if (experienceFilter !== "all") {
       query = query.eq("experience_bucket", experienceFilter);
+    }
+    if (workModeFilter !== "all") {
+      query = query.eq("work_mode", workModeFilter);
     }
 
     const { data, error } = await query;
@@ -112,8 +121,15 @@ function DashboardPage() {
 
     setJobs(filtered);
     setTotalJobs(filtered.length);
+
+    const [{ count: deCount }, { count: scrapedCount }] = await Promise.all([
+      supabase.from("jobs").select("id", { count: "exact", head: true }).ilike("title", "%data%engineer%"),
+      supabase.from("jobs").select("id", { count: "exact", head: true }),
+    ]);
+    setTotalDataEngineerJobs(deCount || 0);
+    setTotalScrapedJobs(scrapedCount || 0);
     setLoading(false);
-  }, [search, locationFilter, experienceFilter, selectedSkills, hideApplied, appliedIds]);
+  }, [search, locationFilter, experienceFilter, workModeFilter, selectedSkills, hideApplied, appliedIds]);
 
   const loadAppliedAndBookmarks = useCallback(async () => {
     if (!user) return;
@@ -214,7 +230,10 @@ function DashboardPage() {
           <h1 className="text-2xl font-bold">Data Engineering Jobs</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {totalJobs} matching jobs
+            {` • ${totalDataEngineerJobs} Data Engineer jobs`}
+            {` • ${totalScrapedJobs} total scraped`}
             {experienceFilter !== "all" && ` • ${experienceFilter}`}
+            {workModeFilter !== "all" && ` • ${workModeFilter}`}
             {selectedSkills.size > 0 && ` • ${selectedSkills.size} skill${selectedSkills.size > 1 ? "s" : ""}`}
             {hideApplied && appliedIds.size > 0 && ` • ${appliedIds.size} applied hidden`}
           </p>
@@ -265,6 +284,18 @@ function DashboardPage() {
                   {level.label}
                   {level.recommended && <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />}
                 </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={workModeFilter} onValueChange={setWorkModeFilter}>
+          <SelectTrigger className="w-full sm:w-[160px]">
+            <SelectValue placeholder="Work mode" />
+          </SelectTrigger>
+          <SelectContent>
+            {WORK_MODES.map((mode) => (
+              <SelectItem key={mode} value={mode}>
+                {mode === "all" ? "All Work Modes" : mode}
               </SelectItem>
             ))}
           </SelectContent>

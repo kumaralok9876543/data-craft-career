@@ -42,16 +42,38 @@ function extractSkills(text: string): string[] {
   return Array.from(found).slice(0, 20);
 }
 
+function cleanText(text: string): string {
+  return text.replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+}
+
+function getTextWithSpacing($: any, selector: string): string {
+  const element = $(selector).first().clone();
+  element.find("br").replaceWith(" ");
+  element.find("p, li, div, section, h1, h2, h3, h4, span").each((_i: number, node: unknown) => {
+    $(node).append(" ");
+  });
+  return cleanText(element.text());
+}
+
+function extractWorkMode(location: string, description: string): string {
+  const text = `${location} ${description}`.toLowerCase();
+  if (/\b(hybrid|partly\s+remote)\b/i.test(text)) return "Hybrid";
+  if (/\b(remote|work\s+from\s+home|wfh|anywhere)\b/i.test(text) && !/\bnot\s+remote\b/i.test(text)) return "Remote";
+  if (/\b(on[-\s]?site|onsite|work\s+from\s+office|wfo|in[-\s]?office)\b/i.test(text)) return "On-site";
+  return "Not specified";
+}
+
 /**
  * Extract experience bucket from the FULL job description text.
  * We look for patterns like "7-10 Years", "3+ years", "Work Experience - 5-8 Years" etc.
  * Only falls back to title-based keywords if no year pattern is found in description.
  */
 function extractExperienceBucket(title: string, description: string): string {
-  const descLower = description.toLowerCase();
+  const normalizedDescription = cleanText(description);
+  const descLower = normalizedDescription.toLowerCase();
 
   // Pattern: "yrs of exp- 14-16 yrs", "experience: 5-8 years", "exp - 3 to 5"
-  const labelRange = descLower.match(/(?:yrs?\s*of\s*exp|years?\s*of\s*exp|experience|exp)\s*[-:]?\s*(\d+)\s*(?:[-–to]+|to)\s*(\d+)\s*\+?\s*(?:years?|yrs?)?/i);
+  const labelRange = descLower.match(/(?:yrs?\s*of\s*exp|years?\s*of\s*exp|experience|exp)\s*[-:]?\s*(\d+)\s*(?:[-–]|\s+to\s+)\s*(\d+)\s*\+?\s*(?:years?|yrs?)?/i);
   if (labelRange) {
     return bucketFromRange(parseInt(labelRange[1]), parseInt(labelRange[2]));
   }
@@ -74,17 +96,27 @@ function extractExperienceBucket(title: string, description: string): string {
     }
   }
 
+  // LinkedIn often hides "requirements added by the job poster" from guest pages,
+  // but still exposes seniority in the criteria block. Use that as a safer fallback
+  // before guessing from titles like "Data Engineer I".
+  const seniorityMatch = normalizedDescription.match(/seniority\s*level\s*([\s\S]{0,90}?)(?:employment\s*type|job\s*function|industries|$)/i);
+  const seniority = seniorityMatch ? seniorityMatch[1].toLowerCase() : "";
+  if (/\b(director|executive|head|vp|principal)\b/i.test(seniority)) return "8+ years";
+  if (/\b(mid[-\s]*senior|senior|lead|staff)\b/i.test(seniority)) return "5-8 years";
+  if (/\bassociate\b/i.test(seniority)) return "3-4 years";
+  if (/\b(entry[-\s]*level|internship|intern)\b/i.test(seniority)) return "0-1 years";
+
   // Fallback to title patterns
   const titleLower = title.toLowerCase();
-  const titleRange = titleLower.match(/(\d+)\s*[-–to]+\s*(\d+)\s*(?:years?|yrs?)/i);
+  const titleRange = titleLower.match(/(\d+)\s*(?:[-–]|\s+to\s+)\s*(\d+)\s*(?:years?|yrs?)/i);
   if (titleRange) return bucketFromRange(parseInt(titleRange[1]), parseInt(titleRange[2]));
   const titlePlus = titleLower.match(/(\d+)\+?\s*(?:years?|yrs?)/i);
   if (titlePlus) return bucketFromSingle(parseInt(titlePlus[1]));
 
   if (/\b(intern|trainee|fresher|graduate|entry[\s-]*level)\b/i.test(titleLower)) return "0-1 years";
-  if (/\b(junior|jr\.?|associate|\bI\b)\b/.test(title)) return "1-2 years";
-  if (/\b(mid[\s-]*level|intermediate|\bII\b)\b/.test(title)) return "3-4 years";
-  if (/\b(senior|sr\.?|lead|staff|\bIII\b)\b/.test(title)) return "5-8 years";
+  if (/\b(junior|jr\.?|associate)\b/i.test(titleLower)) return "1-2 years";
+  if (/\b(mid[\s-]*level|intermediate)\b/i.test(titleLower)) return "3-4 years";
+  if (/\b(senior|sr\.?|lead|staff)\b/i.test(titleLower)) return "5-8 years";
   if (/\b(principal|director|head|vp|architect|manager)\b/i.test(titleLower)) return "8+ years";
 
   return "Not specified";
@@ -180,11 +212,11 @@ async function fetchJobDescription(jobUrl: string): Promise<string> {
       const $ = load(html);
 
       const descriptionHtml =
-        $(".show-more-less-html__markup").text().trim() ||
-        $(".description__text").text().trim() ||
-        $(".core-section-container__content").text().trim() ||
+        getTextWithSpacing($, ".show-more-less-html__markup") ||
+        getTextWithSpacing($, ".description__text") ||
+        getTextWithSpacing($, ".core-section-container__content") ||
         "";
-      const criteria = $(".description__job-criteria-list").text().trim();
+      const criteria = getTextWithSpacing($, ".description__job-criteria-list");
       const combined = `${descriptionHtml} ${criteria}`.trim();
       if (combined.length > 50) return combined;
     } catch {
@@ -326,6 +358,7 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
       const fullText = `${job.position} ${job.fullDescription}`;
       const skills = extractSkills(fullText);
       const experienceBucket = extractExperienceBucket(job.position, job.fullDescription);
+      const workMode = extractWorkMode(job.location || data.location, job.fullDescription);
 
       const { data: companyData } = await supabase
         .from("companies")
@@ -347,6 +380,7 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
           experience_required: experienceBucket,
           experience_bucket: experienceBucket,
           skills_extracted: skills,
+          work_mode: workMode,
           description: job.fullDescription || `${job.position} at ${job.company} in ${job.location || data.location}`,
         },
         { onConflict: "source_url" }
@@ -384,7 +418,7 @@ export const repairExistingJobs = createServerFn({ method: "POST" })
     // Get all jobs with apply_link
     const { data: existingJobs, error } = await supabase
       .from("jobs")
-      .select("id, title, apply_link, description")
+      .select("id, title, location, apply_link, description")
       .not("apply_link", "is", null)
       .order("created_at", { ascending: false })
       .limit(500);
@@ -405,6 +439,7 @@ export const repairExistingJobs = createServerFn({ method: "POST" })
           const existingDesc = job.description || "";
           const bucket = extractExperienceBucket(job.title, existingDesc);
           const skills = extractSkills(`${job.title} ${existingDesc}`);
+          const workMode = extractWorkMode(job.location || "", existingDesc);
 
           await supabase
             .from("jobs")
@@ -412,6 +447,7 @@ export const repairExistingJobs = createServerFn({ method: "POST" })
               experience_bucket: bucket,
               experience_required: bucket,
               skills_extracted: skills,
+              work_mode: workMode,
             })
             .eq("id", job.id);
 
@@ -419,6 +455,7 @@ export const repairExistingJobs = createServerFn({ method: "POST" })
         } else {
           const bucket = extractExperienceBucket(job.title, fullDescription);
           const skills = extractSkills(`${job.title} ${fullDescription}`);
+          const workMode = extractWorkMode(job.location || "", fullDescription);
 
           await supabase
             .from("jobs")
@@ -426,6 +463,7 @@ export const repairExistingJobs = createServerFn({ method: "POST" })
               experience_bucket: bucket,
               experience_required: bucket,
               skills_extracted: skills,
+              work_mode: workMode,
               description: fullDescription,
             })
             .eq("id", job.id);

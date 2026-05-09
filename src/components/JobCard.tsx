@@ -16,6 +16,7 @@ interface JobCardProps {
     posted_date?: string | null;
     source: string;
     apply_link?: string | null;
+    work_mode?: string | null;
     skills?: string[];
   };
   isBookmarked?: boolean;
@@ -79,6 +80,11 @@ export function JobCard({ job, isBookmarked, onToggleBookmark, matchScore, isApp
           )}
           {job.salary && (
             <span className="font-medium text-foreground">{job.salary}</span>
+          )}
+          {job.work_mode && job.work_mode !== "Not specified" && (
+            <Badge variant="secondary" className="text-xs">
+              {job.work_mode}
+            </Badge>
           )}
         </div>
 
