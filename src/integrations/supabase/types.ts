@@ -141,6 +141,7 @@ export type Database = {
           source: string
           source_url: string | null
           title: string
+          work_mode: string | null
         }
         Insert: {
           apply_link?: string | null
@@ -158,6 +159,7 @@ export type Database = {
           source?: string
           source_url?: string | null
           title: string
+          work_mode?: string | null
         }
         Update: {
           apply_link?: string | null
@@ -175,6 +177,7 @@ export type Database = {
           source?: string
           source_url?: string | null
           title?: string
+          work_mode?: string | null
         }
         Relationships: [
           {
