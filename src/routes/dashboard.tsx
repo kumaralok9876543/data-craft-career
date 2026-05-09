@@ -213,9 +213,10 @@ function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Data Engineering Jobs</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {totalJobs} jobs found
-            {experienceFilter !== "all" && ` • ${experienceFilter} experience`}
-            {selectedSkills.size > 0 && ` • ${selectedSkills.size} skill${selectedSkills.size > 1 ? "s" : ""} selected`}
+            {totalJobs} matching jobs
+            {experienceFilter !== "all" && ` • ${experienceFilter}`}
+            {selectedSkills.size > 0 && ` • ${selectedSkills.size} skill${selectedSkills.size > 1 ? "s" : ""}`}
+            {hideApplied && appliedIds.size > 0 && ` • ${appliedIds.size} applied hidden`}
           </p>
         </div>
         <div className="flex gap-2">
