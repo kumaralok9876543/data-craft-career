@@ -157,38 +157,47 @@ const FETCH_HEADERS = {
 /**
  * Fetch the actual job detail page from LinkedIn to get the full description.
  */
+function extractJobId(jobUrl: string): string | null {
+  const m = jobUrl.match(/(\d{8,})(?:\?|$)/);
+  return m ? m[1] : null;
+}
+
 async function fetchJobDescription(jobUrl: string): Promise<string> {
   if (!jobUrl) return "";
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const jobId = extractJobId(jobUrl);
+  // Prefer the jobPosting API endpoint — much more reliable than the full page
+  const urls = jobId
+    ? [
+        `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`,
+        jobUrl,
+      ]
+    : [jobUrl];
 
-    const response = await fetch(jobUrl, {
-      signal: controller.signal,
-      headers: FETCH_HEADERS,
-    });
-    clearTimeout(timeoutId);
+  for (const url of urls) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const response = await fetch(url, { signal: controller.signal, headers: FETCH_HEADERS });
+      clearTimeout(timeoutId);
+      if (!response.ok) continue;
 
-    if (!response.ok) return "";
+      const html = await response.text();
+      const { load } = await import("cheerio");
+      const $ = load(html);
 
-    const html = await response.text();
-    const { load } = await import("cheerio");
-    const $ = load(html);
-
-    // LinkedIn job detail pages have description in these selectors
-    const descriptionHtml =
-      $(".show-more-less-html__markup").text().trim() ||
-      $(".description__text").text().trim() ||
-      $(".core-section-container__content").text().trim() ||
-      "";
-
-    // Also grab the criteria section (experience, employment type etc.)
-    const criteria = $(".description__job-criteria-list").text().trim();
-
-    return `${descriptionHtml} ${criteria}`.trim();
-  } catch {
-    return "";
+      const descriptionHtml =
+        $(".show-more-less-html__markup").text().trim() ||
+        $(".description__text").text().trim() ||
+        $(".core-section-container__content").text().trim() ||
+        "";
+      const criteria = $(".description__job-criteria-list").text().trim();
+      const combined = `${descriptionHtml} ${criteria}`.trim();
+      if (combined.length > 50) return combined;
+    } catch {
+      // try next URL
+    }
   }
+  return "";
 }
 
 async function scrapeLinkedInJobs(keyword: string, location: string, limit: number) {
