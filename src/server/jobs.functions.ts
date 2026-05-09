@@ -212,11 +212,11 @@ async function fetchJobDescription(jobUrl: string): Promise<string> {
       const $ = load(html);
 
       const descriptionHtml =
-        $(".show-more-less-html__markup").text().trim() ||
-        $(".description__text").text().trim() ||
-        $(".core-section-container__content").text().trim() ||
+        getTextWithSpacing($, ".show-more-less-html__markup") ||
+        getTextWithSpacing($, ".description__text") ||
+        getTextWithSpacing($, ".core-section-container__content") ||
         "";
-      const criteria = $(".description__job-criteria-list").text().trim();
+      const criteria = getTextWithSpacing($, ".description__job-criteria-list");
       const combined = `${descriptionHtml} ${criteria}`.trim();
       if (combined.length > 50) return combined;
     } catch {
