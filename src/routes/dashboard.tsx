@@ -87,7 +87,7 @@ function DashboardPage() {
       query = query.eq("experience_bucket", experienceFilter);
     }
 
-    const { data, error, count } = await query;
+    const { data, error } = await query;
 
     if (error) {
       toast.error("Failed to load jobs");
