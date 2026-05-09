@@ -288,6 +288,18 @@ function DashboardPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={workModeFilter} onValueChange={setWorkModeFilter}>
+          <SelectTrigger className="w-full sm:w-[160px]">
+            <SelectValue placeholder="Work mode" />
+          </SelectTrigger>
+          <SelectContent>
+            {WORK_MODES.map((mode) => (
+              <SelectItem key={mode} value={mode}>
+                {mode === "all" ? "All Work Modes" : mode}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Filters Row 2: Skill chips */}
