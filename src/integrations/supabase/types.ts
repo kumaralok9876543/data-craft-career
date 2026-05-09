@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      applied_jobs: {
+        Row: {
+          applied_at: string
+          id: string
+          job_id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string
+          id?: string
+          job_id: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          applied_at?: string
+          id?: string
+          job_id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bookmarks: {
         Row: {
           created_at: string
