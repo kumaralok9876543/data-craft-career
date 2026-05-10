@@ -19,6 +19,7 @@ import { Route as AutoApplyRouteImport } from './routes/auto-apply'
 import { Route as AppliedRouteImport } from './routes/applied'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JobsJobIdRouteImport } from './routes/jobs.$jobId'
+import { Route as ApiPublicDemoSeedRouteImport } from './routes/api/public/demo-seed'
 import { Route as ApiPublicWorkersUpdateRouteImport } from './routes/api/public/workers/update'
 import { Route as ApiPublicWorkersClaimRouteImport } from './routes/api/public/workers/claim'
 import { Route as ApiPublicHooksScrapeJobsRouteImport } from './routes/api/public/hooks/scrape-jobs'
@@ -73,6 +74,11 @@ const JobsJobIdRoute = JobsJobIdRouteImport.update({
   path: '/jobs/$jobId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicDemoSeedRoute = ApiPublicDemoSeedRouteImport.update({
+  id: '/api/public/demo-seed',
+  path: '/api/public/demo-seed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWorkersUpdateRoute = ApiPublicWorkersUpdateRouteImport.update({
   id: '/api/public/workers/update',
   path: '/api/public/workers/update',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/resume': typeof ResumeRoute
   '/study-plan': typeof StudyPlanRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
+  '/api/public/demo-seed': typeof ApiPublicDemoSeedRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
   '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
   '/api/public/workers/update': typeof ApiPublicWorkersUpdateRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/resume': typeof ResumeRoute
   '/study-plan': typeof StudyPlanRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
+  '/api/public/demo-seed': typeof ApiPublicDemoSeedRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
   '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
   '/api/public/workers/update': typeof ApiPublicWorkersUpdateRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/resume': typeof ResumeRoute
   '/study-plan': typeof StudyPlanRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
+  '/api/public/demo-seed': typeof ApiPublicDemoSeedRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
   '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
   '/api/public/workers/update': typeof ApiPublicWorkersUpdateRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/resume'
     | '/study-plan'
     | '/jobs/$jobId'
+    | '/api/public/demo-seed'
     | '/api/public/hooks/scrape-jobs'
     | '/api/public/workers/claim'
     | '/api/public/workers/update'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/resume'
     | '/study-plan'
     | '/jobs/$jobId'
+    | '/api/public/demo-seed'
     | '/api/public/hooks/scrape-jobs'
     | '/api/public/workers/claim'
     | '/api/public/workers/update'
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/resume'
     | '/study-plan'
     | '/jobs/$jobId'
+    | '/api/public/demo-seed'
     | '/api/public/hooks/scrape-jobs'
     | '/api/public/workers/claim'
     | '/api/public/workers/update'
@@ -195,6 +207,7 @@ export interface RootRouteChildren {
   ResumeRoute: typeof ResumeRoute
   StudyPlanRoute: typeof StudyPlanRoute
   JobsJobIdRoute: typeof JobsJobIdRoute
+  ApiPublicDemoSeedRoute: typeof ApiPublicDemoSeedRoute
   ApiPublicHooksScrapeJobsRoute: typeof ApiPublicHooksScrapeJobsRoute
   ApiPublicWorkersClaimRoute: typeof ApiPublicWorkersClaimRoute
   ApiPublicWorkersUpdateRoute: typeof ApiPublicWorkersUpdateRoute
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JobsJobIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/demo-seed': {
+      id: '/api/public/demo-seed'
+      path: '/api/public/demo-seed'
+      fullPath: '/api/public/demo-seed'
+      preLoaderRoute: typeof ApiPublicDemoSeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/workers/update': {
       id: '/api/public/workers/update'
       path: '/api/public/workers/update'
@@ -307,6 +327,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResumeRoute: ResumeRoute,
   StudyPlanRoute: StudyPlanRoute,
   JobsJobIdRoute: JobsJobIdRoute,
+  ApiPublicDemoSeedRoute: ApiPublicDemoSeedRoute,
   ApiPublicHooksScrapeJobsRoute: ApiPublicHooksScrapeJobsRoute,
   ApiPublicWorkersClaimRoute: ApiPublicWorkersClaimRoute,
   ApiPublicWorkersUpdateRoute: ApiPublicWorkersUpdateRoute,
