@@ -43,10 +43,10 @@ export const Route = createFileRoute("/api/public/workers/update")({
         }
 
         if (body.status) {
-          const patch: Record<string, unknown> = { status: body.status };
+          const patch: { status: typeof body.status; error?: string; result?: Record<string, unknown> } = { status: body.status };
           if (body.error) patch.error = body.error;
           if (body.result) patch.result = body.result;
-          await supabaseAdmin.from("auto_apply_queue").update(patch).eq("id", body.id);
+          await supabaseAdmin.from("auto_apply_queue").update(patch as never).eq("id", body.id);
 
           // If succeeded, mirror to applied_jobs
           if (body.status === "succeeded") {
