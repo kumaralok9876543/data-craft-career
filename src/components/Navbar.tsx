@@ -26,6 +26,7 @@ export function Navbar() {
     { to: "/dashboard", label: "Jobs", icon: Briefcase },
     { to: "/recommendations", label: "For You", icon: Compass },
     { to: "/applied", label: "Applied", icon: CheckCircle2 },
+    { to: "/auto-apply", label: "Auto-Apply", icon: Bot },
     { to: "/resume", label: "Resume", icon: FileText },
     { to: "/study-plan", label: "Study Plan", icon: BookOpen },
     { to: "/bookmarks", label: "Saved", icon: Star },
