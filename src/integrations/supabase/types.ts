@@ -14,6 +14,113 @@ export type Database = {
   }
   public: {
     Tables: {
+      applicant_profiles: {
+        Row: {
+          created_at: string
+          current_salary: string | null
+          education: Json | null
+          email: string | null
+          expected_salary: string | null
+          experience: Json | null
+          experience_years: number | null
+          full_name: string | null
+          github_url: string | null
+          linkedin_url: string | null
+          notice_period: string | null
+          phone: string | null
+          portfolio_url: string | null
+          preferred_job_types: string[] | null
+          skills: string[] | null
+          updated_at: string
+          user_id: string
+          work_authorization: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_salary?: string | null
+          education?: Json | null
+          email?: string | null
+          expected_salary?: string | null
+          experience?: Json | null
+          experience_years?: number | null
+          full_name?: string | null
+          github_url?: string | null
+          linkedin_url?: string | null
+          notice_period?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          preferred_job_types?: string[] | null
+          skills?: string[] | null
+          updated_at?: string
+          user_id: string
+          work_authorization?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_salary?: string | null
+          education?: Json | null
+          email?: string | null
+          expected_salary?: string | null
+          experience?: Json | null
+          experience_years?: number | null
+          full_name?: string | null
+          github_url?: string | null
+          linkedin_url?: string | null
+          notice_period?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          preferred_job_types?: string[] | null
+          skills?: string[] | null
+          updated_at?: string
+          user_id?: string
+          work_authorization?: string | null
+        }
+        Relationships: []
+      }
+      application_logs: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          level: string
+          message: string | null
+          queue_id: string | null
+          screenshot_url: string | null
+          step: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          level?: string
+          message?: string | null
+          queue_id?: string | null
+          screenshot_url?: string | null
+          step?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          level?: string
+          message?: string | null
+          queue_id?: string | null
+          screenshot_url?: string | null
+          step?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_logs_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "auto_apply_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applied_jobs: {
         Row: {
           applied_at: string
@@ -37,6 +144,128 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      auto_apply_queue: {
+        Row: {
+          apply_url: string | null
+          ats_platform: string | null
+          attempts: number
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          error: string | null
+          id: string
+          job_id: string
+          lease_expires_at: string | null
+          max_attempts: number
+          result: Json | null
+          status: Database["public"]["Enums"]["aa_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          apply_url?: string | null
+          ats_platform?: string | null
+          attempts?: number
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          job_id: string
+          lease_expires_at?: string | null
+          max_attempts?: number
+          result?: Json | null
+          status?: Database["public"]["Enums"]["aa_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          apply_url?: string | null
+          ats_platform?: string | null
+          attempts?: number
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          job_id?: string
+          lease_expires_at?: string | null
+          max_attempts?: number
+          result?: Json | null
+          status?: Database["public"]["Enums"]["aa_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      auto_apply_settings: {
+        Row: {
+          ai_autoanswer: boolean
+          blacklisted_companies: string[] | null
+          daily_limit: number
+          default_resume_id: string | null
+          demo_mode: boolean
+          enabled: boolean
+          experience_buckets: string[] | null
+          gmail_connected: boolean
+          linkedin_connected: boolean
+          min_ats_score: number
+          min_salary: number | null
+          otp_autofill: boolean
+          preferred_locations: string[] | null
+          preferred_roles: string[] | null
+          updated_at: string
+          user_id: string
+          work_modes: string[] | null
+        }
+        Insert: {
+          ai_autoanswer?: boolean
+          blacklisted_companies?: string[] | null
+          daily_limit?: number
+          default_resume_id?: string | null
+          demo_mode?: boolean
+          enabled?: boolean
+          experience_buckets?: string[] | null
+          gmail_connected?: boolean
+          linkedin_connected?: boolean
+          min_ats_score?: number
+          min_salary?: number | null
+          otp_autofill?: boolean
+          preferred_locations?: string[] | null
+          preferred_roles?: string[] | null
+          updated_at?: string
+          user_id: string
+          work_modes?: string[] | null
+        }
+        Update: {
+          ai_autoanswer?: boolean
+          blacklisted_companies?: string[] | null
+          daily_limit?: number
+          default_resume_id?: string | null
+          demo_mode?: boolean
+          enabled?: boolean
+          experience_buckets?: string[] | null
+          gmail_connected?: boolean
+          linkedin_connected?: boolean
+          min_ats_score?: number
+          min_salary?: number | null
+          otp_autofill?: boolean
+          preferred_locations?: string[] | null
+          preferred_roles?: string[] | null
+          updated_at?: string
+          user_id?: string
+          work_modes?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_apply_settings_default_resume_id_fkey"
+            columns: ["default_resume_id"]
+            isOneToOne: false
+            referencedRelation: "resumes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bookmarks: {
         Row: {
@@ -265,8 +494,11 @@ export type Database = {
           file_name: string | null
           file_url: string | null
           id: string
+          is_default: boolean
+          label: string | null
           parsed_data: Json | null
           raw_text: string | null
+          storage_path: string | null
           uploaded_at: string
           user_id: string
         }
@@ -274,8 +506,11 @@ export type Database = {
           file_name?: string | null
           file_url?: string | null
           id?: string
+          is_default?: boolean
+          label?: string | null
           parsed_data?: Json | null
           raw_text?: string | null
+          storage_path?: string | null
           uploaded_at?: string
           user_id: string
         }
@@ -283,8 +518,11 @@ export type Database = {
           file_name?: string | null
           file_url?: string | null
           id?: string
+          is_default?: boolean
+          label?: string | null
           parsed_data?: Json | null
           raw_text?: string | null
+          storage_path?: string | null
           uploaded_at?: string
           user_id?: string
         }
@@ -308,6 +546,39 @@ export type Database = {
         }
         Relationships: []
       }
+      worker_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          last_used_at: string | null
+          prefix: string
+          revoked_at: string | null
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          last_used_at?: string | null
+          prefix: string
+          revoked_at?: string | null
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          last_used_at?: string | null
+          prefix?: string
+          revoked_at?: string | null
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -316,7 +587,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      aa_status:
+        | "pending"
+        | "claimed"
+        | "running"
+        | "succeeded"
+        | "failed"
+        | "skipped"
+        | "needs_human"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -443,6 +721,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      aa_status: [
+        "pending",
+        "claimed",
+        "running",
+        "succeeded",
+        "failed",
+        "skipped",
+        "needs_human",
+      ],
+    },
   },
 } as const
