@@ -15,9 +15,13 @@ import { Route as RecommendationsRouteImport } from './routes/recommendations'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BookmarksRouteImport } from './routes/bookmarks'
+import { Route as AutoApplyRouteImport } from './routes/auto-apply'
 import { Route as AppliedRouteImport } from './routes/applied'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JobsJobIdRouteImport } from './routes/jobs.$jobId'
+import { Route as ApiPublicDemoSeedRouteImport } from './routes/api/public/demo-seed'
+import { Route as ApiPublicWorkersUpdateRouteImport } from './routes/api/public/workers/update'
+import { Route as ApiPublicWorkersClaimRouteImport } from './routes/api/public/workers/claim'
 import { Route as ApiPublicHooksScrapeJobsRouteImport } from './routes/api/public/hooks/scrape-jobs'
 
 const StudyPlanRoute = StudyPlanRouteImport.update({
@@ -50,6 +54,11 @@ const BookmarksRoute = BookmarksRouteImport.update({
   path: '/bookmarks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AutoApplyRoute = AutoApplyRouteImport.update({
+  id: '/auto-apply',
+  path: '/auto-apply',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppliedRoute = AppliedRouteImport.update({
   id: '/applied',
   path: '/applied',
@@ -65,6 +74,21 @@ const JobsJobIdRoute = JobsJobIdRouteImport.update({
   path: '/jobs/$jobId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicDemoSeedRoute = ApiPublicDemoSeedRouteImport.update({
+  id: '/api/public/demo-seed',
+  path: '/api/public/demo-seed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWorkersUpdateRoute = ApiPublicWorkersUpdateRouteImport.update({
+  id: '/api/public/workers/update',
+  path: '/api/public/workers/update',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWorkersClaimRoute = ApiPublicWorkersClaimRouteImport.update({
+  id: '/api/public/workers/claim',
+  path: '/api/public/workers/claim',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksScrapeJobsRoute =
   ApiPublicHooksScrapeJobsRouteImport.update({
     id: '/api/public/hooks/scrape-jobs',
@@ -75,6 +99,7 @@ const ApiPublicHooksScrapeJobsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/applied': typeof AppliedRoute
+  '/auto-apply': typeof AutoApplyRoute
   '/bookmarks': typeof BookmarksRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -82,11 +107,15 @@ export interface FileRoutesByFullPath {
   '/resume': typeof ResumeRoute
   '/study-plan': typeof StudyPlanRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
+  '/api/public/demo-seed': typeof ApiPublicDemoSeedRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
+  '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
+  '/api/public/workers/update': typeof ApiPublicWorkersUpdateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/applied': typeof AppliedRoute
+  '/auto-apply': typeof AutoApplyRoute
   '/bookmarks': typeof BookmarksRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -94,12 +123,16 @@ export interface FileRoutesByTo {
   '/resume': typeof ResumeRoute
   '/study-plan': typeof StudyPlanRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
+  '/api/public/demo-seed': typeof ApiPublicDemoSeedRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
+  '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
+  '/api/public/workers/update': typeof ApiPublicWorkersUpdateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/applied': typeof AppliedRoute
+  '/auto-apply': typeof AutoApplyRoute
   '/bookmarks': typeof BookmarksRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -107,13 +140,17 @@ export interface FileRoutesById {
   '/resume': typeof ResumeRoute
   '/study-plan': typeof StudyPlanRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
+  '/api/public/demo-seed': typeof ApiPublicDemoSeedRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
+  '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
+  '/api/public/workers/update': typeof ApiPublicWorkersUpdateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/applied'
+    | '/auto-apply'
     | '/bookmarks'
     | '/dashboard'
     | '/login'
@@ -121,11 +158,15 @@ export interface FileRouteTypes {
     | '/resume'
     | '/study-plan'
     | '/jobs/$jobId'
+    | '/api/public/demo-seed'
     | '/api/public/hooks/scrape-jobs'
+    | '/api/public/workers/claim'
+    | '/api/public/workers/update'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/applied'
+    | '/auto-apply'
     | '/bookmarks'
     | '/dashboard'
     | '/login'
@@ -133,11 +174,15 @@ export interface FileRouteTypes {
     | '/resume'
     | '/study-plan'
     | '/jobs/$jobId'
+    | '/api/public/demo-seed'
     | '/api/public/hooks/scrape-jobs'
+    | '/api/public/workers/claim'
+    | '/api/public/workers/update'
   id:
     | '__root__'
     | '/'
     | '/applied'
+    | '/auto-apply'
     | '/bookmarks'
     | '/dashboard'
     | '/login'
@@ -145,12 +190,16 @@ export interface FileRouteTypes {
     | '/resume'
     | '/study-plan'
     | '/jobs/$jobId'
+    | '/api/public/demo-seed'
     | '/api/public/hooks/scrape-jobs'
+    | '/api/public/workers/claim'
+    | '/api/public/workers/update'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppliedRoute: typeof AppliedRoute
+  AutoApplyRoute: typeof AutoApplyRoute
   BookmarksRoute: typeof BookmarksRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
@@ -158,7 +207,10 @@ export interface RootRouteChildren {
   ResumeRoute: typeof ResumeRoute
   StudyPlanRoute: typeof StudyPlanRoute
   JobsJobIdRoute: typeof JobsJobIdRoute
+  ApiPublicDemoSeedRoute: typeof ApiPublicDemoSeedRoute
   ApiPublicHooksScrapeJobsRoute: typeof ApiPublicHooksScrapeJobsRoute
+  ApiPublicWorkersClaimRoute: typeof ApiPublicWorkersClaimRoute
+  ApiPublicWorkersUpdateRoute: typeof ApiPublicWorkersUpdateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookmarksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auto-apply': {
+      id: '/auto-apply'
+      path: '/auto-apply'
+      fullPath: '/auto-apply'
+      preLoaderRoute: typeof AutoApplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/applied': {
       id: '/applied'
       path: '/applied'
@@ -226,6 +285,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JobsJobIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/demo-seed': {
+      id: '/api/public/demo-seed'
+      path: '/api/public/demo-seed'
+      fullPath: '/api/public/demo-seed'
+      preLoaderRoute: typeof ApiPublicDemoSeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/workers/update': {
+      id: '/api/public/workers/update'
+      path: '/api/public/workers/update'
+      fullPath: '/api/public/workers/update'
+      preLoaderRoute: typeof ApiPublicWorkersUpdateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/workers/claim': {
+      id: '/api/public/workers/claim'
+      path: '/api/public/workers/claim'
+      fullPath: '/api/public/workers/claim'
+      preLoaderRoute: typeof ApiPublicWorkersClaimRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/scrape-jobs': {
       id: '/api/public/hooks/scrape-jobs'
       path: '/api/public/hooks/scrape-jobs'
@@ -239,6 +319,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppliedRoute: AppliedRoute,
+  AutoApplyRoute: AutoApplyRoute,
   BookmarksRoute: BookmarksRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
@@ -246,17 +327,11 @@ const rootRouteChildren: RootRouteChildren = {
   ResumeRoute: ResumeRoute,
   StudyPlanRoute: StudyPlanRoute,
   JobsJobIdRoute: JobsJobIdRoute,
+  ApiPublicDemoSeedRoute: ApiPublicDemoSeedRoute,
   ApiPublicHooksScrapeJobsRoute: ApiPublicHooksScrapeJobsRoute,
+  ApiPublicWorkersClaimRoute: ApiPublicWorkersClaimRoute,
+  ApiPublicWorkersUpdateRoute: ApiPublicWorkersUpdateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
