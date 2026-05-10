@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { 
-  Briefcase, BookOpen, FileText, Star, Compass, LogOut, Menu, X, Moon, Sun, User, CheckCircle2
+  Briefcase, BookOpen, FileText, Star, Compass, LogOut, Menu, X, Moon, Sun, User, CheckCircle2, Bot
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
