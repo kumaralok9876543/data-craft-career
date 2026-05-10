@@ -15,6 +15,7 @@ import { Route as RecommendationsRouteImport } from './routes/recommendations'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BookmarksRouteImport } from './routes/bookmarks'
+import { Route as AutoApplyRouteImport } from './routes/auto-apply'
 import { Route as AppliedRouteImport } from './routes/applied'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JobsJobIdRouteImport } from './routes/jobs.$jobId'
@@ -52,6 +53,11 @@ const BookmarksRoute = BookmarksRouteImport.update({
   path: '/bookmarks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AutoApplyRoute = AutoApplyRouteImport.update({
+  id: '/auto-apply',
+  path: '/auto-apply',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppliedRoute = AppliedRouteImport.update({
   id: '/applied',
   path: '/applied',
@@ -87,6 +93,7 @@ const ApiPublicHooksScrapeJobsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/applied': typeof AppliedRoute
+  '/auto-apply': typeof AutoApplyRoute
   '/bookmarks': typeof BookmarksRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/applied': typeof AppliedRoute
+  '/auto-apply': typeof AutoApplyRoute
   '/bookmarks': typeof BookmarksRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/applied': typeof AppliedRoute
+  '/auto-apply': typeof AutoApplyRoute
   '/bookmarks': typeof BookmarksRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/applied'
+    | '/auto-apply'
     | '/bookmarks'
     | '/dashboard'
     | '/login'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/applied'
+    | '/auto-apply'
     | '/bookmarks'
     | '/dashboard'
     | '/login'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/applied'
+    | '/auto-apply'
     | '/bookmarks'
     | '/dashboard'
     | '/login'
@@ -175,6 +187,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppliedRoute: typeof AppliedRoute
+  AutoApplyRoute: typeof AutoApplyRoute
   BookmarksRoute: typeof BookmarksRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookmarksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auto-apply': {
+      id: '/auto-apply'
+      path: '/auto-apply'
+      fullPath: '/auto-apply'
+      preLoaderRoute: typeof AutoApplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/applied': {
       id: '/applied'
       path: '/applied'
@@ -279,6 +299,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppliedRoute: AppliedRoute,
+  AutoApplyRoute: AutoApplyRoute,
   BookmarksRoute: BookmarksRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
@@ -293,3 +314,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
