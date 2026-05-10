@@ -18,6 +18,7 @@ import { Route as BookmarksRouteImport } from './routes/bookmarks'
 import { Route as AppliedRouteImport } from './routes/applied'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JobsJobIdRouteImport } from './routes/jobs.$jobId'
+import { Route as ApiPublicWorkersClaimRouteImport } from './routes/api/public/workers/claim'
 import { Route as ApiPublicHooksScrapeJobsRouteImport } from './routes/api/public/hooks/scrape-jobs'
 
 const StudyPlanRoute = StudyPlanRouteImport.update({
@@ -65,6 +66,11 @@ const JobsJobIdRoute = JobsJobIdRouteImport.update({
   path: '/jobs/$jobId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWorkersClaimRoute = ApiPublicWorkersClaimRouteImport.update({
+  id: '/api/public/workers/claim',
+  path: '/api/public/workers/claim',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksScrapeJobsRoute =
   ApiPublicHooksScrapeJobsRouteImport.update({
     id: '/api/public/hooks/scrape-jobs',
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/study-plan': typeof StudyPlanRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
+  '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/study-plan': typeof StudyPlanRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
+  '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/study-plan': typeof StudyPlanRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
+  '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/study-plan'
     | '/jobs/$jobId'
     | '/api/public/hooks/scrape-jobs'
+    | '/api/public/workers/claim'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/study-plan'
     | '/jobs/$jobId'
     | '/api/public/hooks/scrape-jobs'
+    | '/api/public/workers/claim'
   id:
     | '__root__'
     | '/'
@@ -146,6 +157,7 @@ export interface FileRouteTypes {
     | '/study-plan'
     | '/jobs/$jobId'
     | '/api/public/hooks/scrape-jobs'
+    | '/api/public/workers/claim'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -159,6 +171,7 @@ export interface RootRouteChildren {
   StudyPlanRoute: typeof StudyPlanRoute
   JobsJobIdRoute: typeof JobsJobIdRoute
   ApiPublicHooksScrapeJobsRoute: typeof ApiPublicHooksScrapeJobsRoute
+  ApiPublicWorkersClaimRoute: typeof ApiPublicWorkersClaimRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -226,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JobsJobIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/workers/claim': {
+      id: '/api/public/workers/claim'
+      path: '/api/public/workers/claim'
+      fullPath: '/api/public/workers/claim'
+      preLoaderRoute: typeof ApiPublicWorkersClaimRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/scrape-jobs': {
       id: '/api/public/hooks/scrape-jobs'
       path: '/api/public/hooks/scrape-jobs'
@@ -247,7 +267,17 @@ const rootRouteChildren: RootRouteChildren = {
   StudyPlanRoute: StudyPlanRoute,
   JobsJobIdRoute: JobsJobIdRoute,
   ApiPublicHooksScrapeJobsRoute: ApiPublicHooksScrapeJobsRoute,
+  ApiPublicWorkersClaimRoute: ApiPublicWorkersClaimRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
