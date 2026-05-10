@@ -18,6 +18,7 @@ import { Route as BookmarksRouteImport } from './routes/bookmarks'
 import { Route as AppliedRouteImport } from './routes/applied'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JobsJobIdRouteImport } from './routes/jobs.$jobId'
+import { Route as ApiPublicWorkersUpdateRouteImport } from './routes/api/public/workers/update'
 import { Route as ApiPublicWorkersClaimRouteImport } from './routes/api/public/workers/claim'
 import { Route as ApiPublicHooksScrapeJobsRouteImport } from './routes/api/public/hooks/scrape-jobs'
 
@@ -66,6 +67,11 @@ const JobsJobIdRoute = JobsJobIdRouteImport.update({
   path: '/jobs/$jobId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWorkersUpdateRoute = ApiPublicWorkersUpdateRouteImport.update({
+  id: '/api/public/workers/update',
+  path: '/api/public/workers/update',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWorkersClaimRoute = ApiPublicWorkersClaimRouteImport.update({
   id: '/api/public/workers/claim',
   path: '/api/public/workers/claim',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
   '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
+  '/api/public/workers/update': typeof ApiPublicWorkersUpdateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
   '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
+  '/api/public/workers/update': typeof ApiPublicWorkersUpdateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/api/public/hooks/scrape-jobs': typeof ApiPublicHooksScrapeJobsRoute
   '/api/public/workers/claim': typeof ApiPublicWorkersClaimRoute
+  '/api/public/workers/update': typeof ApiPublicWorkersUpdateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/jobs/$jobId'
     | '/api/public/hooks/scrape-jobs'
     | '/api/public/workers/claim'
+    | '/api/public/workers/update'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/jobs/$jobId'
     | '/api/public/hooks/scrape-jobs'
     | '/api/public/workers/claim'
+    | '/api/public/workers/update'
   id:
     | '__root__'
     | '/'
@@ -158,6 +169,7 @@ export interface FileRouteTypes {
     | '/jobs/$jobId'
     | '/api/public/hooks/scrape-jobs'
     | '/api/public/workers/claim'
+    | '/api/public/workers/update'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -172,6 +184,7 @@ export interface RootRouteChildren {
   JobsJobIdRoute: typeof JobsJobIdRoute
   ApiPublicHooksScrapeJobsRoute: typeof ApiPublicHooksScrapeJobsRoute
   ApiPublicWorkersClaimRoute: typeof ApiPublicWorkersClaimRoute
+  ApiPublicWorkersUpdateRoute: typeof ApiPublicWorkersUpdateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JobsJobIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/workers/update': {
+      id: '/api/public/workers/update'
+      path: '/api/public/workers/update'
+      fullPath: '/api/public/workers/update'
+      preLoaderRoute: typeof ApiPublicWorkersUpdateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/workers/claim': {
       id: '/api/public/workers/claim'
       path: '/api/public/workers/claim'
@@ -268,6 +288,7 @@ const rootRouteChildren: RootRouteChildren = {
   JobsJobIdRoute: JobsJobIdRoute,
   ApiPublicHooksScrapeJobsRoute: ApiPublicHooksScrapeJobsRoute,
   ApiPublicWorkersClaimRoute: ApiPublicWorkersClaimRoute,
+  ApiPublicWorkersUpdateRoute: ApiPublicWorkersUpdateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
