@@ -107,17 +107,18 @@ export const enqueueJob = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: job } = await supabase
       .from("jobs")
-      .select("apply_url, source")
+      .select("apply_link, source")
       .eq("id", data.job_id)
       .maybeSingle();
+    const url = job?.apply_link ?? "";
     const { data: row, error } = await supabase
       .from("auto_apply_queue")
       .upsert(
         {
           user_id: userId,
           job_id: data.job_id,
-          apply_url: job?.apply_url ?? null,
-          ats_platform: detectPlatform(job?.apply_url ?? ""),
+          apply_url: url || null,
+          ats_platform: detectPlatform(url),
           status: "pending",
         },
         { onConflict: "user_id,job_id" }
