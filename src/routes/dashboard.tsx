@@ -18,6 +18,7 @@ export const Route = createFileRoute("/dashboard")({
 
 interface Job {
   id: string;
+  external_job_id: string | null;
   title: string;
   company_name: string;
   location: string;
@@ -79,7 +80,7 @@ function DashboardPage() {
     let query = supabase
       .from("jobs")
       .select("*", { count: "exact" })
-      .ilike("title", "%data%engineer%")
+      .not("external_job_id", "is", null)
       .order("created_at", { ascending: false })
       .limit(500);
 
@@ -122,11 +123,11 @@ function DashboardPage() {
     setJobs(filtered);
     setTotalJobs(filtered.length);
 
-    const [{ count: deCount }, { count: scrapedCount }] = await Promise.all([
-      supabase.from("jobs").select("id", { count: "exact", head: true }).ilike("title", "%data%engineer%"),
-      supabase.from("jobs").select("id", { count: "exact", head: true }),
+    const [{ count: storedCount }, { count: scrapedCount }] = await Promise.all([
+      supabase.from("jobs").select("id", { count: "exact", head: true }).not("external_job_id", "is", null),
+      supabase.from("jobs").select("id", { count: "exact", head: true }).not("external_job_id", "is", null),
     ]);
-    setTotalDataEngineerJobs(deCount || 0);
+    setTotalDataEngineerJobs(storedCount || 0);
     setTotalScrapedJobs(scrapedCount || 0);
     setLoading(false);
   }, [search, locationFilter, experienceFilter, workModeFilter, selectedSkills, hideApplied, appliedIds]);
@@ -230,8 +231,8 @@ function DashboardPage() {
           <h1 className="text-2xl font-bold">Data Engineering Jobs</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {totalJobs} matching jobs
-            {` • ${totalDataEngineerJobs} Data Engineer jobs`}
-            {` • ${totalScrapedJobs} total scraped`}
+            {` • ${totalDataEngineerJobs} stored Data Engineer jobs`}
+            {` • ${totalScrapedJobs} total visible jobs`}
             {experienceFilter !== "all" && ` • ${experienceFilter}`}
             {workModeFilter !== "all" && ` • ${workModeFilter}`}
             {selectedSkills.size > 0 && ` • ${selectedSkills.size} skill${selectedSkills.size > 1 ? "s" : ""}`}
