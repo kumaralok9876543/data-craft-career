@@ -370,6 +370,7 @@ export type Database = {
           description: string | null
           experience_bucket: string | null
           experience_required: string | null
+          external_job_id: string | null
           id: string
           location: string
           posted_date: string | null
@@ -388,6 +389,7 @@ export type Database = {
           description?: string | null
           experience_bucket?: string | null
           experience_required?: string | null
+          external_job_id?: string | null
           id?: string
           location?: string
           posted_date?: string | null
@@ -406,6 +408,7 @@ export type Database = {
           description?: string | null
           experience_bucket?: string | null
           experience_required?: string | null
+          external_job_id?: string | null
           id?: string
           location?: string
           posted_date?: string | null
