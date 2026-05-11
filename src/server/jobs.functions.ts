@@ -184,8 +184,12 @@ const FETCH_HEADERS = {
  * Fetch the actual job detail page from LinkedIn to get the full description.
  */
 function extractJobId(jobUrl: string): string | null {
-  const m = jobUrl.match(/(\d{8,})(?:\?|$)/);
+  const m = jobUrl.match(/(\d{8,})(?:[/?#]|$)/);
   return m ? m[1] : null;
+}
+
+function getStableJobKey(jobUrl: string): string {
+  return extractJobId(jobUrl) || normalizeLinkedInJobUrl(jobUrl);
 }
 
 async function fetchJobDescription(jobUrl: string): Promise<string> {
@@ -353,12 +357,26 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
       return { fetched: 0, message: "No new jobs found from LinkedIn right now. Try again later." };
     }
 
-    let saved = 0;
+    const scrapedKeys = jobs.map((job) => getStableJobKey(job.jobUrl)).filter(Boolean);
+    const { data: existingRows } = scrapedKeys.length
+      ? await supabase.from("jobs").select("external_job_id").in("external_job_id", scrapedKeys)
+      : { data: [] as { external_job_id: string | null }[] };
+    const existingKeys = new Set((existingRows || []).map((row) => row.external_job_id).filter(Boolean));
+    const processedKeys = new Set<string>();
+    let savedNew = 0;
+    let updatedExisting = 0;
+    let failed = 0;
+
     for (const job of jobs) {
+      const externalJobId = getStableJobKey(job.jobUrl);
+      if (processedKeys.has(externalJobId)) continue;
+      processedKeys.add(externalJobId);
+
       const fullText = `${job.position} ${job.fullDescription}`;
       const skills = extractSkills(fullText);
       const experienceBucket = extractExperienceBucket(job.position, job.fullDescription);
       const workMode = extractWorkMode(job.location || data.location, job.fullDescription);
+      const stableJobUrl = normalizeLinkedInJobUrl(job.jobUrl);
 
       const { data: companyData } = await supabase
         .from("companies")
@@ -375,24 +393,40 @@ export const fetchJobsFromLinkedIn = createServerFn({ method: "POST" })
           salary: job.salary || null,
           posted_date: job.agoTime || job.date || null,
           source: "linkedin",
-          source_url: job.jobUrl || `https://linkedin.com/jobs/search?keywords=${encodeURIComponent(job.position)}`,
-          apply_link: job.jobUrl || null,
+          source_url: stableJobUrl || `https://linkedin.com/jobs/search?keywords=${encodeURIComponent(job.position)}`,
+          apply_link: stableJobUrl || null,
+          external_job_id: externalJobId,
           experience_required: experienceBucket,
           experience_bucket: experienceBucket,
           skills_extracted: skills,
           work_mode: workMode,
           description: job.fullDescription || `${job.position} at ${job.company} in ${job.location || data.location}`,
         },
-        { onConflict: "source_url" }
+        { onConflict: "external_job_id" }
       );
 
-      if (!error) saved++;
+      if (error) {
+        failed++;
+      } else if (existingKeys.has(externalJobId)) {
+        updatedExisting++;
+      } else {
+        savedNew++;
+        existingKeys.add(externalJobId);
+      }
     }
 
+    const { count: totalDataEngineerJobs } = await supabase
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .not("external_job_id", "is", null);
+
     return {
-      fetched: saved,
+      fetched: savedNew,
       scraped: jobs.length,
-      message: `Scraped ${jobs.length} Data Engineer jobs and saved ${saved} new listings.`,
+      updated: updatedExisting,
+      failed,
+      totalDataEngineerJobs: totalDataEngineerJobs || 0,
+      message: `Checked ${jobs.length} scraped jobs: ${savedNew} new saved, ${updatedExisting} existing updated. Total stored: ${totalDataEngineerJobs || 0}.`,
     };
   });
 
