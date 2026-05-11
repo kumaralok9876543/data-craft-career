@@ -39,9 +39,9 @@ function AppliedPage() {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
+    const { data: applied, error } = await supabase
       .from("applied_jobs")
-      .select("applied_at, jobs:job_id(*)")
+      .select("job_id, applied_at")
       .eq("user_id", user.id)
       .order("applied_at", { ascending: false });
 
@@ -50,8 +50,15 @@ function AppliedPage() {
       setLoading(false);
       return;
     }
-    const flat = (data || [])
-      .map((row) => row.jobs ? { ...(row.jobs as unknown as Job), applied_at: row.applied_at } : null)
+    const ids = (applied ?? []).map((r) => r.job_id);
+    if (ids.length === 0) { setJobs([]); setLoading(false); return; }
+    const { data: jobRows } = await supabase.from("jobs").select("*").in("id", ids);
+    const map = new Map((jobRows ?? []).map((j) => [j.id, j as unknown as Job]));
+    const flat = (applied ?? [])
+      .map((r) => {
+        const j = map.get(r.job_id);
+        return j ? { ...j, applied_at: r.applied_at } : null;
+      })
       .filter(Boolean) as Job[];
     setJobs(flat);
     setLoading(false);

@@ -3,6 +3,8 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth";
 import { Navbar } from "@/components/Navbar";
 import { Toaster } from "@/components/ui/sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
 
 function NotFoundComponent() {
   return (
@@ -69,11 +71,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const [qc] = useState(() => new QueryClient());
   return (
-    <AuthProvider>
-      <Navbar />
-      <Outlet />
-      <Toaster />
-    </AuthProvider>
+    <QueryClientProvider client={qc}>
+      <AuthProvider>
+        <Navbar />
+        <Outlet />
+        <Toaster />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
