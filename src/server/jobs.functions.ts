@@ -184,7 +184,7 @@ const FETCH_HEADERS = {
  * Fetch the actual job detail page from LinkedIn to get the full description.
  */
 function extractJobId(jobUrl: string): string | null {
-  const m = jobUrl.match(/(\d{8,})(?:\?|$)/);
+  const m = jobUrl.match(/(\d{8,})(?:[/?#]|$)/);
   return m ? m[1] : null;
 }
 
