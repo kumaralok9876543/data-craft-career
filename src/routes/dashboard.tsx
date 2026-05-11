@@ -70,7 +70,6 @@ function DashboardPage() {
   const [hideApplied, setHideApplied] = useState(true);
   const [totalJobs, setTotalJobs] = useState(0);
   const [totalDataEngineerJobs, setTotalDataEngineerJobs] = useState(0);
-  const [totalScrapedJobs, setTotalScrapedJobs] = useState(0);
 
   const fetchJobsFn = useServerFn(fetchJobsFromLinkedIn);
   const repairJobsFn = useServerFn(repairExistingJobs);
@@ -123,12 +122,11 @@ function DashboardPage() {
     setJobs(filtered);
     setTotalJobs(filtered.length);
 
-    const [{ count: storedCount }, { count: scrapedCount }] = await Promise.all([
-      supabase.from("jobs").select("id", { count: "exact", head: true }).not("external_job_id", "is", null),
-      supabase.from("jobs").select("id", { count: "exact", head: true }).not("external_job_id", "is", null),
-    ]);
+    const { count: storedCount } = await supabase
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .not("external_job_id", "is", null);
     setTotalDataEngineerJobs(storedCount || 0);
-    setTotalScrapedJobs(scrapedCount || 0);
     setLoading(false);
   }, [search, locationFilter, experienceFilter, workModeFilter, selectedSkills, hideApplied, appliedIds]);
 
@@ -232,7 +230,6 @@ function DashboardPage() {
           <p className="text-sm text-muted-foreground mt-1">
             {totalJobs} matching jobs
             {` • ${totalDataEngineerJobs} stored Data Engineer jobs`}
-            {` • ${totalScrapedJobs} total visible jobs`}
             {experienceFilter !== "all" && ` • ${experienceFilter}`}
             {workModeFilter !== "all" && ` • ${workModeFilter}`}
             {selectedSkills.size > 0 && ` • ${selectedSkills.size} skill${selectedSkills.size > 1 ? "s" : ""}`}
